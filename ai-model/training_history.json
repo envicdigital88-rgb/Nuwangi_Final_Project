@@ -1,0 +1,34 @@
+[
+  {
+    "session": 1,
+    "timestamp": "2026-04-07 11:55:24",
+    "training_samples": 1600,
+    "training_accuracy": 97.38,
+    "testing_accuracy": 88.5,
+    "duration": 0.39
+  },
+  {
+    "session": 2,
+    "timestamp": "2026-04-07 11:58:31",
+    "training_samples": 1600,
+    "training_accuracy": 97.38,
+    "testing_accuracy": 88.5,
+    "duration": 0.63
+  },
+  {
+    "session": 3,
+    "timestamp": "2026-04-07 12:01:11",
+    "training_samples": 1600,
+    "training_accuracy": 97.56,
+    "testing_accuracy": 94.26,
+    "duration": 0.46
+  },
+  {
+    "session": 4,
+    "timestamp": "2026-07-07 15:54:38",
+    "training_samples": 1611,
+    "training_accuracy": 97.64,
+    "testing_accuracy": 94.29,
+    "duration": 0.65
+  }
+]

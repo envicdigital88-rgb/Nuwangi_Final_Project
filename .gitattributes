@@ -1,0 +1,2 @@
+src/main/resources/static/uploads/models/ScaleReferenceDummy.obj filter=lfs diff=lfs merge=lfs -text
+src/main/resources/static/uploads/models/HairPackPT1.glb filter=lfs diff=lfs merge=lfs -text

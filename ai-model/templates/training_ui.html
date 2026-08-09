@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Training Platform - Professional Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border-right: 1px solid #334155;
+            padding: 2rem 0;
+        }
+
+        .logo {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo p {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+        }
+
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* View Sections */
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #64748b;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: #3b82f6;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .stat-icon.purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .stat-icon.green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .stat-icon.orange {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 1.5rem 0;
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #1e293b;
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: width 0.3s;
+            border-radius: 1rem;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        /* Sample List */
+        .sample-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .sample-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sample-list::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+
+        .sample-list::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        .sample-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .sample-item:hover {
+            border-color: #3b82f6;
+            transform: translateX(4px);
+        }
+
+        .sample-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .sample-title {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .sample-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .sample-badge.female {
+            background: rgba(236, 72, 153, 0.2);
+            color: #ec4899;
+        }
+
+        .sample-badge.male {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .sample-details {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .sample-detail {
+            color: #64748b;
+        }
+
+        .sample-detail strong {
+            color: #94a3b8;
+        }
+
+        /* History List */
+        .history-list {
+            margin-top: 1rem;
+        }
+
+        .history-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: #10b981;
+            transform: translateX(4px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-session {
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .history-date {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .history-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 0.75rem;
+            background: #1e293b;
+            border-radius: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-brain"></i> AI Training</h1>
+                <p>Machine Learning Platform</p>
+            </div>
+            <nav>
+                <div class="nav-item active" onclick="showView('dashboard')">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="showView('training-data')">
+                    <i class="fas fa-database"></i>
+                    <span>Size Training Data</span>
+                </div>
+                <div class="nav-item" onclick="showView('measurement-training')">
+                    <i class="fas fa-camera"></i>
+                    <span>📸 Measurement Training</span>
+                </div>
+                <div class="nav-item" onclick="showView('model-performance')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Model Performance</span>
+                </div>
+                <div class="nav-item" onclick="showView('training-history')">
+                    <i class="fas fa-history"></i>
+                    <span>Training History</span>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view-section active">
+                <div class="header">
+                    <h2>AI Model Training Dashboard</h2>
+                    <p>Train your size recommendation model with professional tools</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="totalSamples">0</div>
+                                <div class="stat-label">Training Samples</div>
+                            </div>
+                            <div class="stat-icon blue">
+                                <i class="fas fa-database"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="totalSessions">0</div>
+                                <div class="stat-label">Training Sessions</div>
+                            </div>
+                            <div class="stat-icon purple">
+                                <i class="fas fa-history"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="bestAccuracy">-</div>
+                                <div class="stat-label">Best Accuracy</div>
+                            </div>
+                            <div class="stat-icon green">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="lastTrained">Never</div>
+                                <div class="stat-label">Last Trained</div>
+                            </div>
+                            <div class="stat-icon orange">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <!-- Left Column: Add Sample -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-plus-circle"></i>
+                                Add Training Sample
+                            </h3>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Enter body measurements and the actual size that fits</span>
+                        </div>
+
+                        <form id="sampleForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Chest (cm)</label>
+                                    <input type="number" class="form-input" id="chest" placeholder="88.0" step="0.1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Waist (cm)</label>
+                                    <input type="number" class="form-input" id="waist" placeholder="72.0" step="0.1" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Hip (cm)</label>
+                                    <input type="number" class="form-input" id="hip" placeholder="95.0" step="0.1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Height (cm)</label>
+                                    <input type="number" class="form-input" id="height" placeholder="165.0" step="0.1" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Actual Size</label>
+                                    <select class="form-select" id="size" required>
+                                        <option value="">Select Size</option>
+                                        <option value="XS">XS - Extra Small</option>
+                                        <option value="S">S - Small</option>
+                                        <option value="M">M - Medium</option>
+                                        <option value="L">L - Large</option>
+                                        <option value="XL">XL - Extra Large</option>
+                                        <option value="XXL">XXL - Double XL</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Gender</label>
+                                    <select class="form-select" id="gender" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="female">Female</option>
+                                        <option value="male">Male</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus"></i>
+                                Add Sample to Dataset
+                            </button>
+                        </form>
+
+                        <button class="btn btn-primary" id="trainBtn" onclick="startTraining()">
+                            <i class="fas fa-rocket"></i>
+                            Start Model Training
+                        </button>
+
+                        <div class="progress-container" id="progressContainer">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="progressMessage">Initializing...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                        </div>
+
+                        <div id="resultsContainer" style="display: none; margin-top: 1.5rem;">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Training completed successfully!</span>
+                            </div>
+                            <div class="form-row">
+                                <div class="metric">
+                                    <div class="metric-value" id="trainAccResult">-</div>
+                                    <div class="metric-label">Training Accuracy</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value" id="testAccResult">-</div>
+                                    <div class="metric-label">Testing Accuracy</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Quick Overview -->
+                    <div>
+                        <!-- Training Samples Preview -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-database"></i>
+                                    Recent Samples
+                                </h3>
+                            </div>
+                            <div id="dashboardSampleList" class="sample-list" style="max-height: 250px;">
+                                <div class="empty-state">
+                                    <i class="fas fa-database"></i>
+                                    <p>No samples yet</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Training -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-history"></i>
+                                    Recent Training
+                                </h3>
+                            </div>
+                            <div id="dashboardHistoryList" class="history-list">
+                                <div class="empty-state">
+                                    <i class="fas fa-history"></i>
+                                    <p>No training history</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Data View -->
+            <div id="training-data-view" class="view-section">
+                <div class="header">
+                    <h2>Training Dataset</h2>
+                    <p>View and manage all training samples</p>
+                </div>
+
+                <!-- Upload Dataset Card -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-upload"></i>
+                            Bulk Upload Dataset
+                        </h3>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Upload multiple training samples at once using CSV or JSON format</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Select File (CSV or JSON)</label>
+                            <input type="file" class="form-input" id="datasetFile" accept=".csv,.json" style="padding: 0.5rem;">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success" onclick="uploadDataset()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Upload Dataset
+                    </button>
+
+                    <div style="margin-top: 1rem; padding: 1rem; background: #0f172a; border-radius: 0.5rem; border: 1px solid #334155;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.875rem; color: #94a3b8;">
+                            <i class="fas fa-file-csv"></i> CSV Format Example:
+                        </h4>
+                        <pre style="font-size: 0.75rem; color: #64748b; overflow-x: auto;">chest,waist,hip,height,size,gender,clothing_type
+88.0,72.0,95.0,165.0,M,female,shirt
+92.0,76.0,98.0,170.0,M,female,shirt
+100.0,86.0,102.0,178.0,L,male,shirt</pre>
+
+                        <h4 style="margin: 0.75rem 0; font-size: 0.875rem; color: #94a3b8;">
+                            <i class="fas fa-file-code"></i> JSON Format Example:
+                        </h4>
+                        <pre style="font-size: 0.75rem; color: #64748b; overflow-x: auto;">[
+  {
+    "measurements": {"chest_cm": 88.0, "waist_cm": 72.0, "hip_cm": 95.0, "height_cm": 165.0},
+    "actual_size": "M",
+    "gender": "female",
+    "clothing_type": "shirt"
+  }
+]</pre>
+                    </div>
+
+                    <!-- Uploaded Files Preview -->
+                    <div id="uploadedFilesPreview" style="margin-top: 1rem; display: none;">
+                        <div style="padding: 1rem; background: #1e293b; border-radius: 0.5rem; border: 1px solid #10b981;">
+                            <h4 style="margin-bottom: 0.75rem; font-size: 0.875rem; color: #10b981;">
+                                <i class="fas fa-check-circle"></i> Recently Uploaded Data
+                            </h4>
+                            <div id="uploadedFilesList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-database"></i>
+                            All Training Samples
+                        </h3>
+                        <button class="btn btn-primary" onclick="loadSamples()" style="width: auto; padding: 0.5rem 1rem;">
+                            <i class="fas fa-sync"></i>
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="sampleList" class="sample-list">
+                        <div class="empty-state">
+                            <i class="fas fa-database"></i>
+                            <p>No training samples yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Performance View -->
+            <div id="model-performance-view" class="view-section">
+                <div class="header">
+                    <h2>Model Performance</h2>
+                    <p>Analyze your model's accuracy and metrics</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="perfBestAcc">-</div>
+                                <div class="stat-label">Best Test Accuracy</div>
+                            </div>
+                            <div class="stat-icon green">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="perfAvgAcc">-</div>
+                                <div class="stat-label">Average Accuracy</div>
+                            </div>
+                            <div class="stat-icon blue">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="perfTotalTrainings">0</div>
+                                <div class="stat-label">Total Trainings</div>
+                            </div>
+                            <div class="stat-icon purple">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value" id="perfAvgTime">-</div>
+                                <div class="stat-label">Avg Training Time</div>
+                            </div>
+                            <div class="stat-icon orange">
+                                <i class="fas fa-stopwatch"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            Performance Over Time
+                        </h3>
+                    </div>
+                    <div id="performanceChart" class="history-list">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line"></i>
+                            <p>Train your model to see performance metrics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Measurement Training View (NEW) -->
+            <div id="measurement-training-view" class="view-section">
+                <div class="header">
+                    <h2>📸 Measurement Model Training</h2>
+                    <p>Train AI to extract body measurements from photos with gender detection</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="measurementTotalSamples">0</div>
+                            <div class="stat-label">Training Photos</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
+                            <i class="fas fa-venus"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="measurementFemaleSamples">0</div>
+                            <div class="stat-label">Female Samples</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                            <i class="fas fa-mars"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="measurementMaleSamples">0</div>
+                            <div class="stat-label">Male Samples</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="measurementReadyStatus">Not Ready</div>
+                            <div class="stat-label">Training Status</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Training Sample -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-plus-circle"></i>
+                            Add Training Sample with Photo
+                        </h3>
+                    </div>
+
+                    <form id="measurementSampleForm" enctype="multipart/form-data">
+                        <div class="form-grid">
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>
+                                    <i class="fas fa-camera"></i>
+                                    Full Body Photo *
+                                </label>
+                                <input type="file" id="measurementPhoto" name="photo" accept="image/*" required 
+                                       style="padding: 0.75rem; background: #1e293b; border: 2px dashed #475569; border-radius: 8px; color: #e2e8f0;"
+                                       onchange="handlePhotoUpload()">
+                                <small style="color: #64748b; display: block; margin-top: 0.5rem;">
+                                    📸 Tips: Stand straight, full body visible, fitted clothing, good lighting
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-ruler-vertical"></i>
+                                    Height (cm) *
+                                </label>
+                                <input type="number" id="measurementHeight" name="height_cm" step="0.1" min="100" max="250" required>
+                            </div>
+
+                            <div class="form-group" style="grid-column: 2 / -1;">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-secondary" onclick="autoExtractMeasurements()" id="autoExtractBtn" disabled style="width: 100%;">
+                                    <i class="fas fa-magic"></i>
+                                    🤖 Auto-Extract Measurements from Photo
+                                </button>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-ruler-horizontal"></i>
+                                    Chest (cm) *
+                                </label>
+                                <input type="number" id="measurementChest" name="chest_cm" step="0.1" min="60" max="150" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-ruler-horizontal"></i>
+                                    Waist (cm) *
+                                </label>
+                                <input type="number" id="measurementWaist" name="waist_cm" step="0.1" min="50" max="150" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-ruler-horizontal"></i>
+                                    Hip (cm) *
+                                </label>
+                                <input type="number" id="measurementHip" name="hip_cm" step="0.1" min="70" max="160" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-venus-mars"></i>
+                                    Gender *
+                                </label>
+                                <select id="measurementGender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="female">Female</option>
+                                    <option value="male">Male</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info" id="measurementHint" style="display: none; margin-top: 1rem;">
+                            <i class="fas fa-lightbulb"></i>
+                            <div>
+                                <strong>💡 Smart Training Workflow:</strong>
+                                <p style="margin: 0.5rem 0;">
+                                    1. Click "Auto-Extract" to get AI estimates (saves time!)<br>
+                                    2. Measure yourself with tape measure<br>
+                                    3. Adjust the numbers to match your REAL measurements<br>
+                                    4. Add sample with accurate data
+                                </p>
+                                <p style="margin: 0.5rem 0 0 0; color: #f59e0b; font-size: 0.9rem;">
+                                    <strong>Remember:</strong> AI estimates are ~75% accurate. Your real measurements make the training data valuable!
+                                </p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                            <i class="fas fa-plus"></i>
+                            Add Training Sample
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Training Samples List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-images"></i>
+                            Training Samples
+                        </h3>
+                        <button class="btn btn-secondary" onclick="loadMeasurementSamples()">
+                            <i class="fas fa-sync"></i>
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="measurementSamplesList" style="max-height: 400px; overflow-y: auto;">
+                        <div class="empty-state">
+                            <i class="fas fa-images"></i>
+                            <p>No training samples yet. Add photos with measurements above.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Train Model -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-brain"></i>
+                            Train Measurement Model
+                        </h3>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>📏 How to Get Accurate Training Data:</strong>
+                            <ol style="margin: 0.5rem 0 0 1.5rem;">
+                                <li><strong>Upload photo</strong> and enter your height</li>
+                                <li><strong>Click "Auto-Extract"</strong> - AI will estimate measurements (70-85% accurate)</li>
+                                <li><strong>Measure yourself with tape measure</strong> - This is the REAL measurement!</li>
+                                <li><strong>Adjust the AI estimates</strong> to match your actual measurements</li>
+                                <li><strong>Add sample</strong> - The more accurate your data, the better the AI learns!</li>
+                            </ol>
+                            <p style="margin: 0.5rem 0 0 0; color: #f59e0b;">
+                                ⚠️ <strong>Important:</strong> AI estimates are NOT 100% accurate. Always verify with tape measure for training data!
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="measurementTrainingProgress" style="display: none;">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div id="measurementProgressBar" class="progress-fill"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="measurementProgressStage">Preparing...</span>
+                                <span id="measurementProgressPercent">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="measurementTrainingResults" style="display: none; margin-top: 1rem;">
+                        <!-- Results will be shown here -->
+                    </div>
+
+                    <button id="trainMeasurementBtn" class="btn btn-primary" onclick="trainMeasurementModel()" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-brain"></i>
+                        Train Measurement Model
+                    </button>
+                </div>
+
+                <!-- Model Info -->
+                <div class="card" id="measurementModelInfo" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i>
+                            Trained Model Information
+                        </h3>
+                    </div>
+                    <div id="measurementModelDetails">
+                        <!-- Model details will be shown here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training History View -->
+            <div id="training-history-view" class="view-section">
+                <div class="header">
+                    <h2>Training History</h2>
+                    <p>Complete timeline of all training sessions</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-history"></i>
+                            All Training Sessions
+                        </h3>
+                    </div>
+
+                    <div id="historyList" class="history-list">
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <p>No training history yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pollingInterval = null;
+
+        window.onload = function() {
+            loadSamples();
+            loadHistory();
+            updateStats();
+            updatePerformanceMetrics();
+
+            document.getElementById('sampleForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addSample();
+            });
+        };
+
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Show selected view
+            document.getElementById(viewName + '-view').classList.add('active');
+
+            // Add active class to clicked nav item
+            event.currentTarget.classList.add('active');
+
+            // Load data for the view
+            if (viewName === 'training-data') {
+                loadSamples();
+            } else if (viewName === 'training-history') {
+                loadHistory();
+            } else if (viewName === 'model-performance') {
+                updatePerformanceMetrics();
+            } else if (viewName === 'dashboard') {
+                loadSamples();
+                loadHistory();
+                updateStats();
+            }
+        }
+
+        function updatePerformanceMetrics() {
+            fetch('/api/training-history')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.history && data.history.length > 0) {
+                        const accuracies = data.history.map(s => s.testing_accuracy);
+                        const times = data.history.map(s => s.duration);
+
+                        const bestAcc = Math.max(...accuracies);
+                        const avgAcc = (accuracies.reduce((a, b) => a + b, 0) / accuracies.length).toFixed(2);
+                        const avgTime = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+
+                        document.getElementById('perfBestAcc').textContent = bestAcc + '%';
+                        document.getElementById('perfAvgAcc').textContent = avgAcc + '%';
+                        document.getElementById('perfTotalTrainings').textContent = data.history.length;
+                        document.getElementById('perfAvgTime').textContent = avgTime + 's';
+
+                        // Show performance chart
+                        const chartDiv = document.getElementById('performanceChart');
+                        let html = '';
+                        data.history.forEach((session, index) => {
+                            html += `
+                                <div class="history-item">
+                                    <div class="history-header">
+                                        <span class="history-session">Session ${session.session}</span>
+                                        <span class="history-date">${session.timestamp}</span>
+                                    </div>
+                                    <div class="history-metrics">
+                                        <div class="metric">
+                                            <div class="metric-value">${session.training_accuracy}%</div>
+                                            <div class="metric-label">Train Acc</div>
+                                        </div>
+                                        <div class="metric">
+                                            <div class="metric-value">${session.testing_accuracy}%</div>
+                                            <div class="metric-label">Test Acc</div>
+                                        </div>
+                                        <div class="metric">
+                                            <div class="metric-value">${session.training_samples}</div>
+                                            <div class="metric-label">Samples</div>
+                                        </div>
+                                        <div class="metric">
+                                            <div class="metric-value">${session.duration}s</div>
+                                            <div class="metric-label">Time</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        chartDiv.innerHTML = html;
+                    }
+                });
+        }
+
+        function addSample() {
+            const data = {
+                chest_cm: parseFloat(document.getElementById('chest').value),
+                waist_cm: parseFloat(document.getElementById('waist').value),
+                hip_cm: parseFloat(document.getElementById('hip').value),
+                height_cm: parseFloat(document.getElementById('height').value),
+                actual_size: document.getElementById('size').value,
+                gender: document.getElementById('gender').value
+            };
+
+            fetch('/api/add-sample', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    document.getElementById('sampleForm').reset();
+                    loadSamples();
+                    updateStats();
+                    showNotification('Sample added successfully!', 'success');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+
+        function loadSamples() {
+            fetch('/api/training-data')
+                .then(response => response.json())
+                .then(data => {
+                    // Update main sample list
+                    const sampleList = document.getElementById('sampleList');
+                    // Update dashboard sample list
+                    const dashboardSampleList = document.getElementById('dashboardSampleList');
+                    
+                    if (data.count === 0) {
+                        const emptyHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-database"></i>
+                                <p>No training samples yet</p>
+                                <p style="font-size: 0.875rem;">Add your first sample to get started</p>
+                            </div>
+                        `;
+                        if (sampleList) sampleList.innerHTML = emptyHTML;
+                        if (dashboardSampleList) dashboardSampleList.innerHTML = emptyHTML;
+                        return;
+                    }
+
+                    let html = '';
+                    data.samples.forEach((sample, index) => {
+                        html += `
+                            <div class="sample-item">
+                                <div class="sample-header">
+                                    <span class="sample-title">Sample ${index + 1}</span>
+                                    <span class="sample-badge ${sample.gender}">${sample.gender.toUpperCase()} - Size ${sample.actual_size}</span>
+                                </div>
+                                <div class="sample-details">
+                                    <div class="sample-detail">Chest: <strong>${sample.measurements.chest_cm}cm</strong></div>
+                                    <div class="sample-detail">Waist: <strong>${sample.measurements.waist_cm}cm</strong></div>
+                                    <div class="sample-detail">Hip: <strong>${sample.measurements.hip_cm}cm</strong></div>
+                                    <div class="sample-detail">Height: <strong>${sample.measurements.height_cm}cm</strong></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    if (sampleList) sampleList.innerHTML = html;
+                    if (dashboardSampleList) {
+                        // Show only first 3 samples on dashboard
+                        let dashHTML = '';
+                        data.samples.slice(0, 3).forEach((sample, index) => {
+                            dashHTML += `
+                                <div class="sample-item">
+                                    <div class="sample-header">
+                                        <span class="sample-title">Sample ${index + 1}</span>
+                                        <span class="sample-badge ${sample.gender}">${sample.gender.toUpperCase()} - ${sample.actual_size}</span>
+                                    </div>
+                                    <div class="sample-details">
+                                        <div class="sample-detail">Chest: <strong>${sample.measurements.chest_cm}cm</strong></div>
+                                        <div class="sample-detail">Waist: <strong>${sample.measurements.waist_cm}cm</strong></div>
+                                        <div class="sample-detail">Hip: <strong>${sample.measurements.hip_cm}cm</strong></div>
+                                        <div class="sample-detail">Height: <strong>${sample.measurements.height_cm}cm</strong></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        dashboardSampleList.innerHTML = dashHTML;
+                    }
+                });
+        }
+
+        function loadHistory() {
+            fetch('/api/training-history')
+                .then(response => response.json())
+                .then(data => {
+                    // Update main history list
+                    const historyList = document.getElementById('historyList');
+                    // Update dashboard history list
+                    const dashboardHistoryList = document.getElementById('dashboardHistoryList');
+                    
+                    if (!data.history || data.history.length === 0) {
+                        const emptyHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-history"></i>
+                                <p>No training history yet</p>
+                                <p style="font-size: 0.875rem;">Train your first model to see results</p>
+                            </div>
+                        `;
+                        if (historyList) historyList.innerHTML = emptyHTML;
+                        if (dashboardHistoryList) dashboardHistoryList.innerHTML = emptyHTML;
+                        return;
+                    }
+
+                    let html = '';
+                    data.history.reverse().forEach(session => {
+                        html += `
+                            <div class="history-item">
+                                <div class="history-header">
+                                    <span class="history-session">Session ${session.session}</span>
+                                    <span class="history-date">${session.timestamp}</span>
+                                </div>
+                                <div class="history-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">${session.training_samples}</div>
+                                        <div class="metric-label">Samples</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">${session.training_accuracy}%</div>
+                                        <div class="metric-label">Train Acc</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">${session.testing_accuracy}%</div>
+                                        <div class="metric-label">Test Acc</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">${session.duration}s</div>
+                                        <div class="metric-label">Duration</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    if (historyList) historyList.innerHTML = html;
+                    if (dashboardHistoryList) {
+                        // Show only first 2 sessions on dashboard
+                        let dashHTML = '';
+                        data.history.slice(0, 2).forEach(session => {
+                            dashHTML += `
+                                <div class="history-item">
+                                    <div class="history-header">
+                                        <span class="history-session">Session ${session.session}</span>
+                                        <span class="history-date">${session.timestamp}</span>
+                                    </div>
+                                    <div class="history-metrics">
+                                        <div class="metric">
+                                            <div class="metric-value">${session.training_samples}</div>
+                                            <div class="metric-label">Samples</div>
+                                        </div>
+                                        <div class="metric">
+                                            <div class="metric-value">${session.testing_accuracy}%</div>
+                                            <div class="metric-label">Test Acc</div>
+                                        </div>
+                                        <div class="metric">
+                                            <div class="metric-value">${session.duration}s</div>
+                                            <div class="metric-label">Time</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        dashboardHistoryList.innerHTML = dashHTML;
+                    }
+                });
+        }
+
+        function updateStats() {
+            fetch('/api/training-data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalSamples').textContent = data.count;
+                });
+
+            fetch('/api/training-history')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.history && data.history.length > 0) {
+                        document.getElementById('totalSessions').textContent = data.history.length;
+                        
+                        const bestAcc = Math.max(...data.history.map(s => s.testing_accuracy));
+                        document.getElementById('bestAccuracy').textContent = bestAcc + '%';
+                        
+                        const lastSession = data.history[data.history.length - 1];
+                        const date = new Date(lastSession.timestamp);
+                        document.getElementById('lastTrained').textContent = date.toLocaleDateString();
+                    }
+                });
+        }
+
+        function startTraining() {
+            const trainBtn = document.getElementById('trainBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            trainBtn.disabled = true;
+            trainBtn.innerHTML = '<i class="fas fa-spinner spinner"></i> Training in Progress...';
+            progressContainer.classList.add('active');
+            resultsContainer.style.display = 'none';
+
+            fetch('/api/train', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    num_samples: 0,
+                    n_estimators: 100,
+                    max_depth: 10,
+                    use_existing_data: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    trainBtn.disabled = false;
+                    trainBtn.innerHTML = '<i class="fas fa-rocket"></i> Start Model Training';
+                } else {
+                    pollingInterval = setInterval(checkStatus, 500);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+                trainBtn.disabled = false;
+                trainBtn.innerHTML = '<i class="fas fa-rocket"></i> Start Model Training';
+            });
+        }
+
+        function checkStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const progressFill = document.getElementById('progressFill');
+                    const progressMessage = document.getElementById('progressMessage');
+                    const progressPercent = document.getElementById('progressPercent');
+                    const trainBtn = document.getElementById('trainBtn');
+                    const resultsContainer = document.getElementById('resultsContainer');
+
+                    progressFill.style.width = data.progress + '%';
+                    progressMessage.textContent = data.message;
+                    progressPercent.textContent = data.progress + '%';
+
+                    if (!data.is_training && data.stage === 'complete') {
+                        clearInterval(pollingInterval);
+                        trainBtn.disabled = false;
+                        trainBtn.innerHTML = '<i class="fas fa-rocket"></i> Start Model Training';
+
+                        if (data.results) {
+                            document.getElementById('trainAccResult').textContent = data.results.train_accuracy + '%';
+                            document.getElementById('testAccResult').textContent = data.results.test_accuracy + '%';
+                            resultsContainer.style.display = 'block';
+                        }
+
+                        loadHistory();
+                        updateStats();
+                        showNotification('Training completed successfully!', 'success');
+                    } else if (!data.is_training && data.stage === 'error') {
+                        clearInterval(pollingInterval);
+                        trainBtn.disabled = false;
+                        trainBtn.innerHTML = '<i class="fas fa-rocket"></i> Start Model Training';
+                        showNotification('Training failed: ' + data.message, 'error');
+                    }
+                });
+        }
+
+        function showNotification(message, type) {
+            // Simple notification - you can enhance this
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function uploadDataset() {
+            const fileInput = document.getElementById('datasetFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading state
+            const uploadBtn = event.currentTarget;
+            const originalHTML = uploadBtn.innerHTML;
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner spinner"></i> Uploading...';
+
+            fetch('/api/upload-dataset', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalHTML;
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    // Show success message
+                    alert(`✅ Success!\n\nAdded: ${data.added_count} samples\nTotal: ${data.total_samples} samples`);
+                    
+                    // Show uploaded file preview
+                    showUploadedFilePreview(file.name, data.added_count, data.preview_samples);
+                    
+                    fileInput.value = '';
+                    loadSamples();
+                    updateStats();
+                }
+            })
+            .catch(error => {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalHTML;
+                alert('Error uploading file: ' + error);
+            });
+        }
+
+        function showUploadedFilePreview(fileName, count, samples) {
+            const previewDiv = document.getElementById('uploadedFilesPreview');
+            const listDiv = document.getElementById('uploadedFilesList');
+            
+            let html = `
+                <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #0f172a; border-radius: 0.5rem; border-left: 3px solid #10b981;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; color: #e2e8f0;">
+                            <i class="fas fa-file"></i> ${fileName}
+                        </span>
+                        <span style="font-size: 0.75rem; color: #10b981;">
+                            ${count} samples added
+                        </span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b;">
+                        Uploaded: ${new Date().toLocaleString()}
+                    </div>
+            `;
+            
+            if (samples && samples.length > 0) {
+                html += `
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #334155;">
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem;">
+                            Preview (first ${Math.min(3, samples.length)} samples):
+                        </div>
+                `;
+                
+                samples.slice(0, 3).forEach((sample, idx) => {
+                    html += `
+                        <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #1e293b; border-radius: 0.25rem;">
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.7rem;">
+                                <span class="sample-badge ${sample.gender}" style="padding: 0.15rem 0.5rem; border-radius: 0.5rem; font-size: 0.65rem;">
+                                    ${sample.gender.toUpperCase()} - ${sample.actual_size}
+                                </span>
+                                <span style="color: #64748b;">Chest: <strong style="color: #94a3b8;">${sample.measurements.chest_cm}cm</strong></span>
+                                <span style="color: #64748b;">Waist: <strong style="color: #94a3b8;">${sample.measurements.waist_cm}cm</strong></span>
+                                <span style="color: #64748b;">Hip: <strong style="color: #94a3b8;">${sample.measurements.hip_cm}cm</strong></span>
+                                <span style="color: #64748b;">Height: <strong style="color: #94a3b8;">${sample.measurements.height_cm}cm</strong></span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            }
+            
+            html += `</div>`;
+            
+            listDiv.innerHTML = html + listDiv.innerHTML;
+            previewDiv.style.display = 'block';
+        }
+
+        function downloadTemplate(format) {
+            window.location.href = '/api/download-template/' + format;
+        }
+        function downloadTemplate(format) {
+            window.location.href = '/api/download-template/' + format;
+        }
+
+        // ============================================================================
+        // MEASUREMENT TRAINING FUNCTIONS (NEW)
+        // ============================================================================
+
+        // Load measurement training stats
+        function loadMeasurementStats() {
+            fetch('/api/measurement/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('measurementTotalSamples').textContent = data.total_samples;
+                    document.getElementById('measurementFemaleSamples').textContent = data.female_samples;
+                    document.getElementById('measurementMaleSamples').textContent = data.male_samples;
+                    
+                    const statusEl = document.getElementById('measurementReadyStatus');
+                    if (data.ready_to_train) {
+                        statusEl.textContent = 'Ready';
+                        statusEl.style.color = '#10b981';
+                    } else {
+                        statusEl.textContent = `Need ${10 - data.total_samples} more`;
+                        statusEl.style.color = '#f59e0b';
+                    }
+
+                    // Show/hide model info
+                    if (data.has_model) {
+                        loadMeasurementModelInfo();
+                    }
+                })
+                .catch(error => console.error('Error loading measurement stats:', error));
+        }
+
+        // Load measurement samples list
+        function loadMeasurementSamples() {
+            fetch('/api/measurement/samples')
+                .then(response => response.json())
+                .then(data => {
+                    const listEl = document.getElementById('measurementSamplesList');
+                    
+                    if (data.samples.length === 0) {
+                        listEl.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-images"></i>
+                                <p>No training samples yet. Add photos with measurements above.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '<table style="width: 100%; border-collapse: collapse;">';
+                    html += '<thead><tr style="background: #1e293b; border-bottom: 2px solid #334155;">';
+                    html += '<th style="padding: 1rem; text-align: left;">Photo</th>';
+                    html += '<th style="padding: 1rem; text-align: left;">Gender</th>';
+                    html += '<th style="padding: 1rem; text-align: right;">Height</th>';
+                    html += '<th style="padding: 1rem; text-align: right;">Chest</th>';
+                    html += '<th style="padding: 1rem; text-align: right;">Waist</th>';
+                    html += '<th style="padding: 1rem; text-align: right;">Hip</th>';
+                    html += '</tr></thead><tbody>';
+
+                    data.samples.forEach((sample, index) => {
+                        const genderIcon = sample.gender === 'female' ? '♀️' : '♂️';
+                        const genderColor = sample.gender === 'female' ? '#ec4899' : '#3b82f6';
+                        
+                        html += `<tr style="border-bottom: 1px solid #334155;">`;
+                        html += `<td style="padding: 1rem;">${sample.image}</td>`;
+                        html += `<td style="padding: 1rem;"><span style="color: ${genderColor};">${genderIcon} ${sample.gender}</span></td>`;
+                        html += `<td style="padding: 1rem; text-align: right;">${sample.height} cm</td>`;
+                        html += `<td style="padding: 1rem; text-align: right;">${sample.chest} cm</td>`;
+                        html += `<td style="padding: 1rem; text-align: right;">${sample.waist} cm</td>`;
+                        html += `<td style="padding: 1rem; text-align: right;">${sample.hip} cm</td>`;
+                        html += `</tr>`;
+                    });
+
+                    html += '</tbody></table>';
+                    listEl.innerHTML = html;
+                })
+                .catch(error => console.error('Error loading measurement samples:', error));
+        }
+
+        // Add measurement sample
+        document.getElementById('measurementSampleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            fetch('/api/measurement/add-sample', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✓ Sample added successfully! Total samples: ${data.total_samples}`);
+                    document.getElementById('measurementSampleForm').reset();
+                    loadMeasurementStats();
+                    loadMeasurementSamples();
+                } else {
+                    alert('✗ Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('✗ Error adding sample: ' + error);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus"></i> Add Training Sample';
+            });
+        });
+
+        // Train measurement model
+        function trainMeasurementModel() {
+            if (!confirm('Start training measurement model? This may take a few minutes.')) {
+                return;
+            }
+
+            const btn = document.getElementById('trainMeasurementBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+
+            document.getElementById('measurementTrainingProgress').style.display = 'block';
+            document.getElementById('measurementTrainingResults').style.display = 'none';
+
+            fetch('/api/measurement/train', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Start polling for progress
+                    pollMeasurementTrainingStatus();
+                } else {
+                    alert('✗ Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-brain"></i> Train Measurement Model';
+                }
+            })
+            .catch(error => {
+                alert('✗ Error starting training: ' + error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-brain"></i> Train Measurement Model';
+            });
+        }
+
+        // Poll measurement training status
+        function pollMeasurementTrainingStatus() {
+            const interval = setInterval(() => {
+                fetch('/api/measurement/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update progress bar
+                        document.getElementById('measurementProgressBar').style.width = data.progress + '%';
+                        document.getElementById('measurementProgressStage').textContent = data.message;
+                        document.getElementById('measurementProgressPercent').textContent = data.progress + '%';
+
+                        // Check if complete
+                        if (data.stage === 'complete') {
+                            clearInterval(interval);
+                            showMeasurementTrainingResults(data.results);
+                            
+                            const btn = document.getElementById('trainMeasurementBtn');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-brain"></i> Train Measurement Model';
+                            
+                            loadMeasurementStats();
+                            loadMeasurementModelInfo();
+                        } else if (data.stage === 'error') {
+                            clearInterval(interval);
+                            alert('✗ Training failed: ' + data.message);
+                            
+                            const btn = document.getElementById('trainMeasurementBtn');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-brain"></i> Train Measurement Model';
+                            
+                            document.getElementById('measurementTrainingProgress').style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling status:', error);
+                        clearInterval(interval);
+                    });
+            }, 1000);
+        }
+
+        // Show measurement training results
+        function showMeasurementTrainingResults(results) {
+            const resultsEl = document.getElementById('measurementTrainingResults');
+            resultsEl.style.display = 'block';
+
+            resultsEl.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Training Complete!</strong>
+                        <p style="margin: 0.5rem 0 0 0;">
+                            Accuracy: ${results.accuracy.toFixed(1)}% | 
+                            Avg Error: ${results.avg_error.toFixed(2)} cm | 
+                            Duration: ${results.duration}s
+                        </p>
+                        <p style="margin: 0.5rem 0 0 0;">
+                            Samples: ${results.training_samples} 
+                            (${results.female_samples} female, ${results.male_samples} male)
+                        </p>
+                        <p style="margin: 0.5rem 0 0 0;">
+                            Gender Classifier: ${results.has_gender_classifier ? '✓ Trained' : '✗ Not trained'}
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load measurement model info
+        function loadMeasurementModelInfo() {
+            fetch('/api/measurement/model-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        document.getElementById('measurementModelInfo').style.display = 'block';
+                        
+                        const detailsEl = document.getElementById('measurementModelDetails');
+                        detailsEl.innerHTML = `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1rem;">
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Accuracy</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">${data.accuracy.toFixed(1)}%</div>
+                                </div>
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Avg Error</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700;">${data.avg_error_cm.toFixed(2)} cm</div>
+                                </div>
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Training Samples</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700;">${data.training_samples}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Gender Classifier</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700;">${data.has_gender_classifier ? '✓' : '✗'}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Last Trained</div>
+                                    <div style="font-size: 0.875rem; font-weight: 600;">${data.modified}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #64748b; font-size: 0.875rem;">Model Size</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700;">${data.file_size_mb} MB</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => console.error('Error loading model info:', error));
+        }
+
+        // Load measurement data when view is shown
+        const originalShowView = showView;
+        showView = function(viewName) {
+            originalShowView(viewName);
+            
+            if (viewName === 'measurement-training') {
+                loadMeasurementStats();
+                loadMeasurementSamples();
+                loadMeasurementModelInfo();
+            }
+        };
+
+        // Handle photo upload - enable auto-extract button
+        function handlePhotoUpload() {
+            const photoInput = document.getElementById('measurementPhoto');
+            const heightInput = document.getElementById('measurementHeight');
+            const autoExtractBtn = document.getElementById('autoExtractBtn');
+            const hint = document.getElementById('measurementHint');
+            
+            if (photoInput.files.length > 0) {
+                hint.style.display = 'block';
+                
+                // Enable auto-extract if height is also provided
+                if (heightInput.value) {
+                    autoExtractBtn.disabled = false;
+                }
+                
+                // Add listener to height input
+                heightInput.addEventListener('input', function() {
+                    autoExtractBtn.disabled = !this.value || photoInput.files.length === 0;
+                });
+            }
+        }
+
+        // Auto-extract measurements from photo
+        function autoExtractMeasurements() {
+            const photoInput = document.getElementById('measurementPhoto');
+            const heightInput = document.getElementById('measurementHeight');
+            const btn = document.getElementById('autoExtractBtn');
+            
+            if (!photoInput.files.length) {
+                alert('Please upload a photo first');
+                return;
+            }
+            
+            if (!heightInput.value) {
+                alert('Please enter height first');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Extracting measurements & detecting gender...';
+            
+            const formData = new FormData();
+            formData.append('photo', photoInput.files[0]);
+            formData.append('height_cm', heightInput.value);
+            
+            fetch('/api/measurement/extract-from-photo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fill in the measurements
+                    document.getElementById('measurementChest').value = data.measurements.chest_cm.toFixed(1);
+                    document.getElementById('measurementWaist').value = data.measurements.waist_cm.toFixed(1);
+                    document.getElementById('measurementHip').value = data.measurements.hip_cm.toFixed(1);
+                    
+                    // Auto-fill gender
+                    if (data.gender) {
+                        document.getElementById('measurementGender').value = data.gender.detected;
+                        
+                        // Highlight gender field
+                        document.getElementById('measurementGender').style.background = 'rgba(59, 130, 246, 0.1)';
+                        document.getElementById('measurementGender').style.borderColor = '#3b82f6';
+                    }
+                    
+                    // Show realistic message with gender detection
+                    const confidence = (data.measurements.confidence * 100).toFixed(0);
+                    const genderConfidence = data.gender ? (data.gender.confidence * 100).toFixed(0) : 0;
+                    
+                    let message = `🤖 AI Analysis Complete!\n\n`;
+                    message += `📏 MEASUREMENTS (${confidence}% confident):\n`;
+                    message += `Chest: ${data.measurements.chest_cm.toFixed(1)} cm\n`;
+                    message += `Waist: ${data.measurements.waist_cm.toFixed(1)} cm\n`;
+                    message += `Hip: ${data.measurements.hip_cm.toFixed(1)} cm\n\n`;
+                    
+                    if (data.gender) {
+                        const genderIcon = data.gender.detected === 'male' ? '♂️' : '♀️';
+                        message += `${genderIcon} GENDER DETECTED: ${data.gender.detected.toUpperCase()}\n`;
+                        message += `Confidence: ${genderConfidence}%\n`;
+                        message += `(Based on body proportions)\n\n`;
+                    }
+                    
+                    message += `⚠️ IMPORTANT:\n`;
+                    message += `These are AI ESTIMATES, not exact measurements!\n\n`;
+                    message += `Please:\n`;
+                    message += `1. Measure yourself with tape measure\n`;
+                    message += `2. Adjust these numbers to REAL measurements\n`;
+                    message += `3. Verify gender is correct\n\n`;
+                    message += `Accurate data = Better AI! 🎯`;
+                    
+                    alert(message);
+                    
+                    // Highlight the measurement fields
+                    document.getElementById('measurementChest').style.background = 'rgba(245, 158, 11, 0.1)';
+                    document.getElementById('measurementWaist').style.background = 'rgba(245, 158, 11, 0.1)';
+                    document.getElementById('measurementHip').style.background = 'rgba(245, 158, 11, 0.1)';
+                    document.getElementById('measurementChest').style.borderColor = '#f59e0b';
+                    document.getElementById('measurementWaist').style.borderColor = '#f59e0b';
+                    document.getElementById('measurementHip').style.borderColor = '#f59e0b';
+                    
+                    setTimeout(() => {
+                        document.getElementById('measurementChest').style.background = '';
+                        document.getElementById('measurementWaist').style.background = '';
+                        document.getElementById('measurementHip').style.background = '';
+                        document.getElementById('measurementChest').style.borderColor = '';
+                        document.getElementById('measurementWaist').style.borderColor = '';
+                        document.getElementById('measurementHip').style.borderColor = '';
+                        document.getElementById('measurementGender').style.background = '';
+                        document.getElementById('measurementGender').style.borderColor = '';
+                    }, 5000);
+                } else {
+                    alert('✗ Could not extract measurements from photo.\n\n' +
+                          'Possible reasons:\n' +
+                          '- Body not fully visible\n' +
+                          '- Poor photo quality\n' +
+                          '- Bad lighting or angle\n\n' +
+                          'Please enter measurements manually using a tape measure.');
+                }
+            })
+            .catch(error => {
+                alert('✗ Error: ' + error + '\n\nPlease enter measurements manually.');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> 🤖 Auto-Extract Measurements from Photo';
+            });
+        }
+    </script>
+</body>
+</html>

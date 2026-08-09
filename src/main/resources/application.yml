@@ -1,0 +1,132 @@
+spring:
+  application:
+    name: virtual-tryon-platform
+  
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/virtual_tryon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: passwordmysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        id:
+          db_struct_naming_strategy: legacy
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        type:
+          preferred_uuid_jdbc_type: CHAR
+  
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    enabled: false
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  
+  web:
+    resources:
+      static-locations: classpath:/static/,file:src/main/resources/static/
+  
+  mvc:
+    static-path-pattern: /**
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+    default-encoding: UTF-8
+
+server:
+  port: 8082
+  servlet:
+    context-path: /
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+
+aws:
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:virtual-tryon-media}
+
+ai:
+  services:
+    base-url: http://localhost:5000
+
+open:
+  api:
+    api-key: ${OPENAI_API_KEY:}
+    url: https://api.openai.com/v1
+
+# AI Avatar Customization (Optional - uses rule-based if not configured)
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:}
+
+logging:
+  level:
+    com.virtualtryonsaas: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  
+  datasource:
+    url: jdbc:mysql://mysql:3306/virtual_tryon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+  
+  redis:
+    host: redis
+
+ai:
+  services:
+    base-url: http://ai-services:8000
