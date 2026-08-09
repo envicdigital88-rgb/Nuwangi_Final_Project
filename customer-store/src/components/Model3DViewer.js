@@ -209,17 +209,17 @@ const Model3DViewer = forwardRef(({
         object.rotation.z = 0;
         console.log('✅ Applied DRESS rotation (Y:180° to face front)');
       } else if (category.includes('pant') || category.includes('trouser') || category.includes('jean')) {
-        // PANTS: Different orientation
-        object.rotation.x = -Math.PI / 2;
-        object.rotation.y = 0;
+        // PANTS: Stand upright and face forward
+        object.rotation.x = 0;
+        object.rotation.y = Math.PI; // Rotate 180° to face front
         object.rotation.z = 0;
-        console.log('Applied PANTS rotation');
+        console.log('Applied PANTS rotation (upright, facing front)');
       } else {
-        // SHIRTS and others: Default orientation
-        object.rotation.x = -Math.PI / 2;
-        object.rotation.y = 0;
+        // SHIRTS, TOPS, JACKETS and others: Stand upright and face forward
+        object.rotation.x = 0;
+        object.rotation.y = Math.PI; // Rotate 180° to face front
         object.rotation.z = 0;
-        console.log('Applied SHIRT rotation (default)');
+        console.log('✅ Applied SHIRT/TOP rotation (upright, facing front)');
       }
       
       // Update matrix after rotation
@@ -452,11 +452,11 @@ const Model3DViewer = forwardRef(({
             console.log('Clothing children count:', clothingModel.children.length);
             
             // Apply same rotation as mannequin to match orientation
-            // Rotate clothing overlay to match mannequin orientation (-Math.PI / 2 on X)
-            clothingModel.rotation.x = -Math.PI / 2;
-            clothingModel.rotation.y = 0;
+            // Mannequin is now upright facing front (Y: 180°)
+            clothingModel.rotation.x = 0;
+            clothingModel.rotation.y = Math.PI; // Match mannequin facing front
             clothingModel.rotation.z = 0;
-            console.log('Applied clothing rotation matching mannequin (X: -90°)');
+            console.log('Applied clothing rotation matching mannequin (upright, Y: 180°)');
             
             // Update matrix after rotation
             clothingModel.updateMatrixWorld(true);

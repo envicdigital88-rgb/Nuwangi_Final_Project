@@ -41,7 +41,7 @@ spring:
   
   web:
     resources:
-      static-locations: classpath:/static/,file:src/main/resources/static/
+      static-locations: classpath:/static/,file:src/main/resources/static/,file:./
   
   mvc:
     static-path-pattern: /**

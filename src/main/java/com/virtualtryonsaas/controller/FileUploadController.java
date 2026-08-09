@@ -1,6 +1,7 @@
 package com.virtualtryonsaas.controller;
 
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @CrossOrigin(origins = {"http://localhost:3001", "http://localhost:3002"}, allowCredentials = "true")
 public class FileUploadController {
 
-    private static final String UPLOAD_DIR = "src/main/resources/static/uploads/";
+    private static final String UPLOAD_DIR = "uploads/";
 
     @PostMapping("/model")
     public ResponseEntity<?> uploadModel(@RequestParam("file") MultipartFile file) {
@@ -148,6 +149,15 @@ public class FileUploadController {
             System.out.println("Clean path: " + cleanPath);
             
             Resource resource = new ClassPathResource("static/uploads/" + cleanPath);
+            
+            // Fallback: look in root-level uploads/ directory
+            if (!resource.exists() || !resource.isReadable()) {
+                java.io.File fsFile = Paths.get("uploads/" + cleanPath).toFile();
+                if (fsFile.exists()) {
+                    resource = new FileSystemResource(fsFile);
+                    System.out.println("Found in root uploads/ dir: " + fsFile.getAbsolutePath());
+                }
+            }
             
             System.out.println("Resource exists: " + resource.exists());
             System.out.println("Resource readable: " + resource.isReadable());

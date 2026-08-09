@@ -18,12 +18,19 @@ import java.nio.file.Paths;
 public class ModelFileController {
 
     private static final String MODELS_DIR = "src/main/resources/static/uploads/models/";
+    private static final String MODELS_DIR_ROOT = "uploads/models/";
 
     @GetMapping("/hair")
     public ResponseEntity<Resource> getHairModel() {
         try {
             Path filePath = Paths.get(MODELS_DIR + "HairPackPT1.glb");
             File file = filePath.toFile();
+
+            // Fallback to root uploads directory
+            if (!file.exists()) {
+                filePath = Paths.get(MODELS_DIR_ROOT + "HairPackPT1.glb");
+                file = filePath.toFile();
+            }
             
             if (!file.exists()) {
                 System.out.println("Hair model file not found: " + filePath.toAbsolutePath());
@@ -55,8 +62,15 @@ public class ModelFileController {
         try {
             Path filePath = Paths.get(MODELS_DIR + "ScaleReferenceDummy.obj");
             File file = filePath.toFile();
+
+            // Fallback to root uploads directory
+            if (!file.exists()) {
+                filePath = Paths.get(MODELS_DIR_ROOT + "ScaleReferenceDummy.obj");
+                file = filePath.toFile();
+            }
             
             if (!file.exists()) {
+                System.out.println("Mannequin model not found: " + filePath.toAbsolutePath());
                 return ResponseEntity.notFound().build();
             }
 

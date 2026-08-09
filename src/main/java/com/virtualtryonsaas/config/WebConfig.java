@@ -12,11 +12,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Serve uploaded files from classpath
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("classpath:/static/uploads/");
-        
-        // Also serve from file system for development
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:src/main/resources/static/uploads/");
+                .addResourceLocations(
+                    "classpath:/static/uploads/",
+                    "file:src/main/resources/static/uploads/",
+                    "file:uploads/"
+                );
     }
 
     @Override
