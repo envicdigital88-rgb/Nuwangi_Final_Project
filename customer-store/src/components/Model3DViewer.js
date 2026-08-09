@@ -192,34 +192,22 @@ const Model3DViewer = forwardRef(({
       console.log('Product category received:', productCategory);
       console.log('Product category type:', typeof productCategory);
       
-      // Apply rotation based on product category
+      // Auto-detect if 3D model was exported with Z-up (e.g. Blender OBJ models like shirts/pants/suits) vs Y-up
+      const isZUp = size.z > size.y;
       const category = (productCategory || 'shirt').toLowerCase();
-      console.log('Category after toLowerCase:', category);
       
       if (category.includes('avatar') || category.includes('mannequin')) {
-        // AVATAR/MANNEQUIN: Stand upright (Y axis is natively 180cm vertical height)
-        object.rotation.x = 0;
+        // AVATAR/MANNEQUIN
+        object.rotation.x = isZUp ? Math.PI / 2 : 0;
         object.rotation.y = 0;
         object.rotation.z = 0;
-        console.log('✅ Applied AVATAR upright rotation (X: 0°)');
-      } else if (category.includes('dress') || category.includes('frock')) {
-        // DRESSES: Stand upright and face forward
-        object.rotation.x = 0;
-        object.rotation.y = Math.PI; // Rotate 180° to face front
-        object.rotation.z = 0;
-        console.log('✅ Applied DRESS rotation (Y:180° to face front)');
-      } else if (category.includes('pant') || category.includes('trouser') || category.includes('jean')) {
-        // PANTS: Stand upright and face forward
-        object.rotation.x = 0;
-        object.rotation.y = Math.PI; // Rotate 180° to face front
-        object.rotation.z = 0;
-        console.log('Applied PANTS rotation (upright, facing front)');
+        console.log(`✅ Applied AVATAR rotation (isZUp=${isZUp})`);
       } else {
-        // SHIRTS, TOPS, JACKETS and others: Stand upright and face forward
-        object.rotation.x = 0;
-        object.rotation.y = Math.PI; // Rotate 180° to face front
+        // PRODUCTS (Shirts, Pants, Suits, Dresses, Tops, Jackets, etc.)
+        object.rotation.x = isZUp ? Math.PI / 2 : 0;
+        object.rotation.y = Math.PI; // Rotate 180° to face front towards camera
         object.rotation.z = 0;
-        console.log('✅ Applied SHIRT/TOP rotation (upright, facing front)');
+        console.log(`✅ Applied PRODUCT rotation for '${category}' (isZUp=${isZUp}, X=${object.rotation.x}, Y=${object.rotation.y})`);
       }
       
       // Update matrix after rotation
