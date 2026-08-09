@@ -439,49 +439,92 @@ const Model3DViewer = forwardRef(({
             console.log('Clothing model object:', clothingModel);
             console.log('Clothing children count:', clothingModel.children.length);
             
-            // Apply same rotation as mannequin to match orientation
-            // Mannequin is now upright facing front (Y: 180°)
-            clothingModel.rotation.x = 0;
-            clothingModel.rotation.y = Math.PI; // Match mannequin facing front
-            clothingModel.rotation.z = 0;
-            console.log('Applied clothing rotation matching mannequin (upright, Y: 180°)');
+            // 1. Detect if clothing is pre-fitted to mannequin coordinate space
+            const rawBox = new THREE.Box3().setFromObject(clothingModel);
+            const rawMinY = rawBox.min.y;
+            const rawMaxY = rawBox.max.y;
+            const rawSize = rawBox.getSize(new THREE.Vector3());
+            const isPreFitted = (rawMinY > 10 || rawMaxY > 30) && ((clothingModelUrl || '').includes('_fitted') || rawSize.y > 10);
+
+            if (isPreFitted && modelRef.current) {
+              // Pre-fitted model shares 1-to-1 coordinate space with mannequin
+              clothingModel.rotation.copy(modelRef.current.rotation);
+              clothingModel.scale.copy(modelRef.current.scale);
+              clothingModel.position.copy(modelRef.current.position);
+              console.log('✅ Applied 1-to-1 Pre-Fitted mesh alignment');
+            } else {
+              // Raw product model (shirt.obj, pant.obj, suit.obj, dress.obj)
+              // Convert Blender Z-up if size.z > size.y
+              const isZUp = rawSize.z > rawSize.y;
+              clothingModel.rotation.x = isZUp ? Math.PI / 2 : 0;
+              clothingModel.rotation.y = modelRef.current ? modelRef.current.rotation.y : Math.PI;
+              clothingModel.rotation.z = 0;
+              clothingModel.updateMatrixWorld(true);
+
+              // Get mannequin world bounds
+              const mBox = modelRef.current ? new THREE.Box3().setFromObject(modelRef.current) : null;
+              const mHeight = mBox ? (mBox.max.y - mBox.min.y) : 3.5;
+              const mWidth = mBox ? (mBox.max.x - mBox.min.x) : 1.2;
+              const mMinY = mBox ? mBox.min.y : -1.75;
+              const mCenterX = mBox ? (mBox.min.x + mBox.max.x) / 2 : 0;
+              const mCenterZ = mBox ? (mBox.min.z + mBox.max.z) / 2 : 0;
+
+              const cat = (productCategory || '').toLowerCase();
+              let targetClothingHeight;
+              let targetTopRatio; // Proportion from bottom of mannequin (0.0 = feet, 1.0 = top of head)
+              let targetWidthRatio = 0.50;
+
+              if (cat.includes('dress') || cat.includes('frock') || cat.includes('gown')) {
+                targetClothingHeight = 0.68 * mHeight;
+                targetTopRatio = 0.82; // Shoulders
+                targetWidthRatio = 0.54;
+              } else if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) {
+                targetClothingHeight = 0.55 * mHeight;
+                targetTopRatio = 0.60; // Waist
+                targetWidthRatio = 0.40;
+              } else if (cat.includes('shirt') || cat.includes('top') || cat.includes('jacket') || cat.includes('coat') || cat.includes('suit')) {
+                targetClothingHeight = 0.38 * mHeight;
+                targetTopRatio = 0.82; // Shoulders
+                targetWidthRatio = 0.52;
+              } else {
+                targetClothingHeight = 0.65 * mHeight;
+                targetTopRatio = 0.80;
+                targetWidthRatio = 0.50;
+              }
+
+              const rotatedBox = new THREE.Box3().setFromObject(clothingModel);
+              const rotatedSize = rotatedBox.getSize(new THREE.Vector3());
+
+              const scaleY = targetClothingHeight / (rotatedSize.y || 1);
+              const scaledWidth = rotatedSize.x * scaleY;
+              const requiredWidth = mWidth * targetWidthRatio;
+              let scaleX = scaleY;
+              if (scaledWidth < requiredWidth && rotatedSize.x > 0) {
+                scaleX = scaleY * (requiredWidth / scaledWidth);
+              }
+
+              clothingModel.scale.set(scaleX, scaleY, scaleX * 1.05);
+              clothingModel.updateMatrixWorld(true);
+
+              const finalBox = new THREE.Box3().setFromObject(clothingModel);
+              const finalTopY = finalBox.max.y;
+              const finalCenterX = (finalBox.min.x + finalBox.max.x) / 2;
+              const finalCenterZ = (finalBox.min.z + finalBox.max.z) / 2;
+              const targetTopY = mMinY + (targetTopRatio * mHeight);
+
+              clothingModel.position.set(
+                mCenterX - finalCenterX,
+                targetTopY - finalTopY,
+                mCenterZ - finalCenterZ
+              );
+              console.log('✅ Applied Auto-Fitted Mesh Alignment');
+            }
             
-            // Update matrix after rotation
-            clothingModel.updateMatrixWorld(true);
-            
-            // Get clothing dimensions AFTER rotation
-            const clothingBox = new THREE.Box3().setFromObject(clothingModel);
-            const clothingSize = clothingBox.getSize(new THREE.Vector3());
-            const clothingCenter = clothingBox.getCenter(new THREE.Vector3());
-            
-            console.log('Clothing size after rotation:', clothingSize);
-            console.log('Clothing center after rotation:', clothingCenter);
-            
-            // Scale clothing to match mannequin size exactly
-            const clothingMaxDim = Math.max(clothingSize.x, clothingSize.y, clothingSize.z);
-            const targetClothingSize = 2.5; // Same as mannequin
-            const clothingScale = targetClothingSize / clothingMaxDim;
-            clothingModel.scale.multiplyScalar(clothingScale);
-            
-            console.log('Clothing scale:', clothingScale);
-            
-            // Position clothing to align perfectly with mannequin center
-            // Both models should be centered at (0, 0, 0)
-            clothingModel.position.set(
-              -clothingCenter.x * clothingScale,
-              -clothingCenter.y * clothingScale,
-              -clothingCenter.z * clothingScale
-            );
-            
-            console.log('Clothing final position:', clothingModel.position);
-            
-            // Apply clothing material with product color
+            // Apply clothing material with product color & polygonOffset to eliminate clipping
             let meshCount = 0;
             clothingModel.traverse((child) => {
               if (child instanceof THREE.Mesh) {
                 meshCount++;
-                
-                // Dispose of old material if it exists
                 if (child.material) {
                   if (Array.isArray(child.material)) {
                     child.material.forEach(mat => mat.dispose());
@@ -490,13 +533,11 @@ const Model3DViewer = forwardRef(({
                   }
                 }
                 
-                // Create new material if it doesn't exist
                 child.material = new THREE.MeshStandardMaterial({
                   color: productColor === 'White' ? 0xffffff : 
                          productColor === 'Black' ? 0x000000 :
                          productColor === 'Red' ? 0xDC143C :
-                         productColor === 'Blue' ? 0x4169E1 :
-                         0xcccccc,
+                         productColor === 'Blue' ? 0x4169E1 : 0xcccccc,
                   roughness: 0.6,
                   metalness: 0.0,
                   side: THREE.DoubleSide,
@@ -504,6 +545,9 @@ const Model3DViewer = forwardRef(({
                   opacity: 1.0,
                   depthTest: true,
                   depthWrite: true,
+                  polygonOffset: true,
+                  polygonOffsetFactor: -1,
+                  polygonOffsetUnits: -1,
                   flatShading: false,
                 });
                 
@@ -511,8 +555,6 @@ const Model3DViewer = forwardRef(({
                 child.receiveShadow = true;
                 child.renderOrder = 1;
                 child.material.needsUpdate = true;
-                
-                console.log('Applied material to mesh:', child.name || 'unnamed');
               }
             });
             
