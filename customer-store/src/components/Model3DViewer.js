@@ -724,6 +724,10 @@ const Model3DViewer = forwardRef(({
     productColorRef.current = productColor;
   }, [productColor]);
 
+  // Check if this is an avatar/mannequin
+  const isAvatarModel = (productCategory || '').toLowerCase().includes('avatar') || 
+                        (productCategory || '').toLowerCase().includes('mannequin');
+
   // Separate effect to handle productColor changes without reloading the model
   useEffect(() => {
     if (!productColor) return;
@@ -752,10 +756,10 @@ const Model3DViewer = forwardRef(({
     const applyColor = () => {
       if (clothingRef.current) {
         // Clothing is loaded — update it directly
-        changeColor(colorHex);
-      } else if (modelRef.current && !loading) {
+        changeClothingColor(colorHex);
+      } else if (modelRef.current && !loading && !applyAvatarCustomization && !isAvatarModel) {
         // No clothing yet (still in 2-second setTimeout). Retry after clothing delay.
-        // We schedule a retry at 2.5 s to be safe.
+        // We schedule a retry at 2.5 s to be safe (only for standalone non-avatar models).
         const retryId = setTimeout(() => {
           changeColor(colorHex);
         }, 2500);
@@ -799,7 +803,7 @@ const Model3DViewer = forwardRef(({
     // Apply skin tone to avatar body
     if (initialSkinTone && skinToneMap[initialSkinTone.toLowerCase()]) {
       console.log('Applying skin tone:', initialSkinTone);
-      changeColor(skinToneMap[initialSkinTone.toLowerCase()]);
+      changeSkinTone(skinToneMap[initialSkinTone.toLowerCase()]);
     }
 
     // Apply hair color if hair model exists
@@ -814,39 +818,10 @@ const Model3DViewer = forwardRef(({
     }
   }, [applyAvatarCustomization, initialSkinTone, initialHairColor, initialEyeColor, loading]);
 
-  // Change model color - with safety checks
-  const changeColor = (colorHex) => {
-    console.log('changeColor called with:', colorHex);
-    
-    if (!sceneRef.current) {
-      console.warn('Scene not ready');
-      return;
-    }
-    
-    // Change clothing color if present
-    if (clothingRef.current) {
-      console.log('Changing clothing color');
-      clothingRef.current.traverse((child) => {
-        if (child instanceof THREE.Mesh && child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach(mat => {
-              if (mat && mat.color) {
-                mat.color.set(colorHex);
-                mat.needsUpdate = true;
-              }
-            });
-          } else {
-            if (child.material.color) {
-              child.material.color.set(colorHex);
-              child.material.needsUpdate = true;
-            }
-          }
-        }
-      });
-    }
-    // Otherwise change mannequin/model color
-    else if (modelRef.current) {
-      console.log('Changing model color');
+  // Change avatar body skin tone
+  const changeSkinTone = (colorHex) => {
+    if (modelRef.current) {
+      console.log('Changing skin tone to:', colorHex);
       modelRef.current.traverse((child) => {
         if (child instanceof THREE.Mesh && child.material) {
           if (Array.isArray(child.material)) {
@@ -867,6 +842,51 @@ const Model3DViewer = forwardRef(({
     }
   };
 
+  // Change clothing color separately
+  const changeClothingColor = (colorHex) => {
+    if (clothingRef.current) {
+      console.log('Changing clothing color to:', colorHex);
+      clothingRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => {
+              if (mat && mat.color) {
+                mat.color.set(colorHex);
+                mat.needsUpdate = true;
+              }
+            });
+          } else {
+            if (child.material.color) {
+              child.material.color.set(colorHex);
+              child.material.needsUpdate = true;
+            }
+          }
+        }
+      });
+    }
+  };
+
+  // Change model color - with safety checks (does not touch avatar skin if applyAvatarCustomization or isAvatar is true)
+  const changeColor = (colorHex) => {
+    console.log('changeColor called with:', colorHex);
+    
+    if (!sceneRef.current) {
+      console.warn('Scene not ready');
+      return;
+    }
+    
+    // Change clothing color if present
+    if (clothingRef.current) {
+      changeClothingColor(colorHex);
+    }
+    // Otherwise change mannequin/model color ONLY if not an avatar with customization
+    else if (modelRef.current && !applyAvatarCustomization && !isAvatarModel) {
+      changeSkinTone(colorHex);
+    } else {
+      console.log('Preserving saved avatar skin tone - skipped recoloring mannequin body with product color');
+    }
+  };
+
   // Change hair color separately
   const changeHairColor = (colorHex) => {
     if (hairRef.current) {
@@ -879,10 +899,16 @@ const Model3DViewer = forwardRef(({
     }
   };
 
-  // Expose methods to parent via ref - make sure changeColor is always available
+  // Expose methods to parent via ref - make sure changeColor and changeSkinTone are always available
   useImperativeHandle(ref, () => ({
     changeColor: (colorHex) => {
       changeColor(colorHex);
+    },
+    changeSkinTone: (colorHex) => {
+      changeSkinTone(colorHex);
+    },
+    changeClothingColor: (colorHex) => {
+      changeClothingColor(colorHex);
     },
     changeHairColor: (colorHex) => {
       changeHairColor(colorHex);

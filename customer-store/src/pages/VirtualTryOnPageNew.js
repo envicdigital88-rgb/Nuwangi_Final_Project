@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -81,6 +81,8 @@ const LazyModel3DViewer = ({ modelUrl, height, width, productColor, productCateg
 const VirtualTryOnPageNew = () => {
   const { customer, bodyProfile: authBodyProfile, refreshBodyProfile } = useCustomerAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   
   // Profile state
   const [bodyProfile, setBodyProfile] = useState(null);
@@ -279,9 +281,13 @@ const VirtualTryOnPageNew = () => {
     }
 
     // ALSO update the avatar viewer clothing colour immediately
-    if (avatarViewerRef.current && avatarViewerRef.current.changeColor) {
-      console.log('Changing avatar clothing color to:', color, 'hex:', hexColor.toString(16));
-      avatarViewerRef.current.changeColor(hexColor);
+    if (avatarViewerRef.current) {
+      if (avatarViewerRef.current.changeClothingColor) {
+        console.log('Changing avatar clothing color to:', color, 'hex:', hexColor.toString(16));
+        avatarViewerRef.current.changeClothingColor(hexColor);
+      } else if (avatarViewerRef.current.changeColor) {
+        avatarViewerRef.current.changeColor(hexColor);
+      }
     }
   };
 

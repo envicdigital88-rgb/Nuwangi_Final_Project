@@ -359,8 +359,7 @@ const Avatar2DView = ({ bodyProfile, product, selectedColor = 'White', onViewCha
                 y="120"
                 width="15"
                 height="100"
-                fill={productOverlay && (productOverlay.type === 'shirt' || productOverlay.type === 'suit') 
-                  ? productOverlay.color : avatar.skinColor}
+                fill={avatar.skinColor}
                 stroke="#333"
                 strokeWidth="2"
                 rx="5"
@@ -370,8 +369,7 @@ const Avatar2DView = ({ bodyProfile, product, selectedColor = 'White', onViewCha
                 y="120"
                 width="15"
                 height="100"
-                fill={productOverlay && (productOverlay.type === 'shirt' || productOverlay.type === 'suit') 
-                  ? productOverlay.color : avatar.skinColor}
+                fill={avatar.skinColor}
                 stroke="#333"
                 strokeWidth="2"
                 rx="5"
