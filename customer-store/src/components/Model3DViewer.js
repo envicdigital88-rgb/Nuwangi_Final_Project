@@ -33,6 +33,7 @@ const Model3DViewer = forwardRef(({
   const sceneRef = useRef(null);
   const pivotGroupRef = useRef(null); // Single group that holds avatar + clothing — rotated as one unit
   const avatarBoundsRef = useRef(null); // Avatar bounds stored at load time (pivotGroup rotation=0)
+  const productColorRef = useRef(productColor); // Always holds the LATEST productColor prop (avoids stale closure)
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [isAutoRotating, setIsAutoRotating] = React.useState(autoRotate);
@@ -583,11 +584,22 @@ const Model3DViewer = forwardRef(({
                   }
                 }
                 
+                // Use productColorRef.current so we always get the LATEST selected colour,
+                // not the stale value captured when the main useEffect first ran.
+                const clothingColorMap = {
+                  'white': 0xFFFFFF, 'black': 0x000000, 'red': 0xDC143C, 'blue': 0x4169E1,
+                  'navy': 0x000080, 'green': 0x228B22, 'yellow': 0xFFD700, 'pink': 0xFF69B4,
+                  'purple': 0x9370DB, 'orange': 0xFF8C00, 'gray': 0x808080, 'grey': 0x808080,
+                  'brown': 0x8B4513, 'beige': 0xF5F5DC, 'cream': 0xFFFDD0, 'maroon': 0x800000,
+                  'cyan': 0x00CED1, 'teal': 0x008080, 'olive': 0x808000, 'gold': 0xFFD700,
+                  'silver': 0xC0C0C0, 'lavender': 0xE6E6FA, 'peach': 0xFFDAB9,
+                };
+                const currentColor = (productColorRef.current || 'white').toLowerCase().trim();
+                const resolvedColor = clothingColorMap[currentColor] 
+                  || (currentColor.startsWith('#') ? parseInt(currentColor.replace('#',''), 16) : null)
+                  || 0xDC143C; // default to red if unknown
                 child.material = new THREE.MeshStandardMaterial({
-                  color: productColor === 'White' ? 0xffffff : 
-                         productColor === 'Black' ? 0x000000 :
-                         productColor === 'Red' ? 0xDC143C :
-                         productColor === 'Blue' ? 0x4169E1 : 0xcccccc,
+                  color: resolvedColor,
                   roughness: 0.6,
                   metalness: 0.0,
                   side: THREE.DoubleSide,
@@ -706,52 +718,53 @@ const Model3DViewer = forwardRef(({
     };
   }, [modelUrl, hairModelUrl, clothingModelUrl, width, height]);
 
+  // Keep productColorRef in sync with the latest prop so the clothing load
+  // callback (inside a setTimeout) always reads the current value.
+  useEffect(() => {
+    productColorRef.current = productColor;
+  }, [productColor]);
+
   // Separate effect to handle productColor changes without reloading the model
   useEffect(() => {
-    // Wait for model to be loaded
-    if (!productColor || !modelRef.current || loading) {
-      console.log('Skipping color change - model not ready:', { 
-        hasProductColor: !!productColor, 
-        hasModel: !!modelRef.current, 
-        loading 
-      });
-      return;
-    }
-    
-    console.log('Product color changed to:', productColor);
-    
-    // Map color names to hex values
+    if (!productColor) return;
+
+    // Full colour map
     const colorMap = {
-      'White': 0xFFFFFF,
-      'Black': 0x000000,
-      'Red': 0xDC143C,
-      'Blue': 0x4169E1,
-      'Navy': 0x000080,
-      'Green': 0x228B22,
-      'Yellow': 0xFFD700,
-      'Pink': 0xFF69B4,
-      'Purple': 0x9370DB,
-      'Orange': 0xFF8C00,
-      'Gray': 0x808080,
-      'Grey': 0x808080,
-      'Brown': 0x8B4513,
-      'Beige': 0xF5F5DC,
-      'Cream': 0xFFFDD0,
+      'White': 0xFFFFFF, 'Black': 0x000000, 'Red': 0xDC143C, 'Blue': 0x4169E1,
+      'Navy': 0x000080, 'Green': 0x228B22, 'Yellow': 0xFFD700, 'Pink': 0xFF69B4,
+      'Purple': 0x9370DB, 'Orange': 0xFF8C00, 'Gray': 0x808080, 'Grey': 0x808080,
+      'Brown': 0x8B4513, 'Beige': 0xF5F5DC, 'Cream': 0xFFFDD0, 'Maroon': 0x800000,
+      'Cyan': 0x00CED1, 'Teal': 0x008080, 'Olive': 0x808000, 'Gold': 0xFFD700,
+      'Silver': 0xC0C0C0, 'Lavender': 0xE6E6FA, 'Peach': 0xFFDAB9,
     };
-    
-    // Convert color name to hex
+
     let colorHex;
     if (typeof productColor === 'string') {
-      colorHex = colorMap[productColor] || parseInt(productColor.replace('#', '0x'), 16) || 0xCCCCCC;
+      // Case-insensitive lookup
+      const key = Object.keys(colorMap).find(k => k.toLowerCase() === productColor.toLowerCase().trim());
+      colorHex = key ? colorMap[key] : (productColor.startsWith('#') ? parseInt(productColor.replace('#',''), 16) : 0xCCCCCC);
     } else {
       colorHex = productColor || 0xCCCCCC;
     }
-    
-    console.log('Applying color:', productColor, '-> hex:', colorHex);
-    
-    // Apply color to the model
-    changeColor(colorHex);
-  }, [productColor, loading]);
+
+    console.log('Applying color:', productColor, '-> hex:', colorHex.toString(16));
+
+    const applyColor = () => {
+      if (clothingRef.current) {
+        // Clothing is loaded — update it directly
+        changeColor(colorHex);
+      } else if (modelRef.current && !loading) {
+        // No clothing yet (still in 2-second setTimeout). Retry after clothing delay.
+        // We schedule a retry at 2.5 s to be safe.
+        const retryId = setTimeout(() => {
+          changeColor(colorHex);
+        }, 2500);
+        return () => clearTimeout(retryId);
+      }
+    };
+
+    applyColor();
+  }, [productColor]);
 
   // Apply avatar customizations (skin tone, hair color, eye color) after model loads
   useEffect(() => {

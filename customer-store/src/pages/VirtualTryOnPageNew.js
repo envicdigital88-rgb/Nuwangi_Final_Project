@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -20,6 +20,63 @@ import Model3DViewer from '../components/Model3DViewer';
 import { productsAPI } from '../services/apiService';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import axios from 'axios';
+
+// ── LazyModel3DViewer ─────────────────────────────────────────────────────────
+// Only mounts the WebGL context when the card is visible in the viewport.
+// Browsers allow only ~8-16 WebGL contexts simultaneously. Rendering all product
+// cards at once exhausts this limit, causing other viewers to go white/blank.
+const LazyModel3DViewer = ({ modelUrl, height, width, productColor, productCategory, imageUrl }) => {
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect(); // once visible, stay rendered (don't unmount on scroll out)
+        }
+      },
+      { threshold: 0.1, rootMargin: '80px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', height }}>
+      {isVisible ? (
+        <Model3DViewer
+          modelUrl={modelUrl}
+          height={height}
+          width={width}
+          productColor={productColor}
+          productCategory={productCategory}
+          showColorPicker={false}
+          autoRotate={false}
+        />
+      ) : (
+        <div style={{
+          width: '100%',
+          height,
+          background: 'radial-gradient(circle, #2a2a2a 0%, #0a0a0a 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}>
+          {imageUrl
+            ? <img src={imageUrl} alt="product" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', opacity: 0.75 }} />
+            : <div style={{ color: '#555', fontSize: 13 }}>3D View</div>
+          }
+        </div>
+      )}
+    </div>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 const VirtualTryOnPageNew = () => {
   const { customer, bodyProfile: authBodyProfile, refreshBodyProfile } = useCustomerAuth();
@@ -203,30 +260,31 @@ const VirtualTryOnPageNew = () => {
     console.log('Color change requested:', color);
     setSelectedColor(color);
     
-    // Change 3D model color if product viewer ref exists
+    const colorMap = {
+      'White': 0xFFFFFF, 'Black': 0x000000, 'Red': 0xDC143C, 'Blue': 0x4169E1,
+      'Navy': 0x000080, 'Green': 0x228B22, 'Yellow': 0xFFD700, 'Pink': 0xFF69B4,
+      'Purple': 0x9370DB, 'Orange': 0xFF8C00, 'Gray': 0x808080, 'Grey': 0x808080,
+      'Brown': 0x8B4513, 'Beige': 0xF5F5DC, 'Cream': 0xFFFDD0, 'Maroon': 0x800000,
+      'Cyan': 0x00CED1, 'Teal': 0x008080, 'Olive': 0x808000, 'Gold': 0xFFD700,
+      'Silver': 0xC0C0C0, 'Lavender': 0xE6E6FA, 'Peach': 0xFFDAB9,
+    };
+    // Case-insensitive lookup
+    const key = Object.keys(colorMap).find(k => k.toLowerCase() === (color || '').toLowerCase().trim());
+    const hexColor = key ? colorMap[key] : (color && color.startsWith('#') ? parseInt(color.replace('#',''), 16) : 0xCCCCCC);
+
+    // Update product 3D viewer colour
     if (productViewerRef.current && productViewerRef.current.changeColor) {
-      const colorMap = {
-        'White': 0xFFFFFF,
-        'Black': 0x000000,
-        'Red': 0xDC143C,
-        'Blue': 0x4169E1,
-        'Navy': 0x000080,
-        'Green': 0x228B22,
-        'Yellow': 0xFFD700,
-        'Pink': 0xFF69B4,
-        'Purple': 0x9370DB,
-        'Orange': 0xFF8C00,
-        'Gray': 0x808080,
-        'Grey': 0x808080,
-        'Brown': 0x8B4513,
-      };
-      const hexColor = colorMap[color] || 0xCCCCCC;
-      console.log('Changing product color to:', color, 'hex:', hexColor);
+      console.log('Changing product viewer color to:', color, 'hex:', hexColor.toString(16));
       productViewerRef.current.changeColor(hexColor);
-    } else {
-      console.warn('Product viewer ref not available');
+    }
+
+    // ALSO update the avatar viewer clothing colour immediately
+    if (avatarViewerRef.current && avatarViewerRef.current.changeColor) {
+      console.log('Changing avatar clothing color to:', color, 'hex:', hexColor.toString(16));
+      avatarViewerRef.current.changeColor(hexColor);
     }
   };
+
 
   return (
     <Box sx={{ 
@@ -399,8 +457,11 @@ const VirtualTryOnPageNew = () => {
                 
                 console.log('VirtualTryOnPageNew: Rendering avatar with URL:', avatarUrl);
                 
-                // Create a unique key based on avatar properties AND selected product to update when product or color changes
-                const avatarKey = `${avatarUrl}-${skinTone}-${hairColor}-${eyeColor}-${hairStyle}-${selectedProduct?.id || 'none'}-${selectedColor || 'none'}`;
+                // Key based on avatar properties + selected product ID only.
+                // Do NOT include selectedColor here — we update colour imperatively via
+                // avatarViewerRef.changeColor() to avoid destroying the 3D scene on every click.
+                const avatarKey = `${avatarUrl}-${skinTone}-${hairColor}-${eyeColor}-${hairStyle}-${selectedProduct?.id || 'none'}`;
+
                 
                 const clothingUrl = selectedProduct?.model3dUrl 
                   ? (selectedProduct.model3dUrl.startsWith('http') 
@@ -1218,14 +1279,13 @@ const VirtualTryOnPageNew = () => {
                     background: 'radial-gradient(circle, #2a2a2a 0%, #0a0a0a 100%)'
                   }}>
                     {product.model3dUrl ? (
-                      <Model3DViewer 
+                      <LazyModel3DViewer
                         modelUrl={`http://localhost:8082${product.model3dUrl}`}
                         height={380}
                         width="100%"
                         productColor={product.color?.split(',')[0]?.trim() || 'White'}
                         productCategory={product.category}
-                        showColorPicker={false}
-                        autoRotate={false}
+                        imageUrl={product.imageUrl || product.image}
                       />
                     ) : (
                       <CardMedia
