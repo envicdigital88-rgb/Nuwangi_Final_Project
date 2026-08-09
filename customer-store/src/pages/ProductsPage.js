@@ -79,8 +79,15 @@ const ProductsPage = () => {
     setFilteredProducts(products);
   };
 
-  const handleTryOn = (productId) => {
-    navigate(`/virtual-tryon?productId=${productId}`);
+  const handleTryOn = (productId, colorName) => {
+    const colorParam = colorName ? `&color=${encodeURIComponent(colorName)}` : '';
+    navigate(`/virtual-tryon?productId=${productId}${colorParam}`);
+  };
+
+  const getFirstColor = (colorStr) => {
+    if (!colorStr) return 'White';
+    const first = colorStr.split(',')[0]?.trim();
+    return first || 'White';
   };
 
   if (loading) {
@@ -183,7 +190,10 @@ const ProductsPage = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {filteredProducts.map((product) => (
+        {filteredProducts.map((product) => {
+          const productColor = getFirstColor(product.color);
+
+          return (
           <Grid item xs={12} sm={6} md={4} key={product.id}>
             <Card sx={{ 
               height: '100%', 
@@ -211,7 +221,7 @@ const ProductsPage = () => {
                     modelUrl={`http://localhost:8082${product.model3dUrl}`}
                     height={380}
                     width="100%"
-                    productColor={product.color?.split(',')[0]?.trim() || 'White'}
+                    productColor={productColor}
                     productCategory={product.category}
                     showColorPicker={false}
                     showControls={false}
@@ -249,6 +259,7 @@ const ProductsPage = () => {
                 }}>
                   {product.name}
                 </Typography>
+
                 <Typography variant="body2" sx={{ 
                   mb: 2, 
                   color: '#94a3b8',
@@ -297,7 +308,7 @@ const ProductsPage = () => {
                   size="large" 
                   fullWidth 
                   variant="contained" 
-                  onClick={() => handleTryOn(product.id)}
+                  onClick={() => handleTryOn(product.id, productColor)}
                   sx={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                     color: '#ffffff',
@@ -315,7 +326,8 @@ const ProductsPage = () => {
               </CardActions>
             </Card>
           </Grid>
-        ))}
+        );
+      })}
       </Grid>
 
       {filteredProducts.length === 0 && !loading && (

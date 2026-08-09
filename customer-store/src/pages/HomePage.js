@@ -30,6 +30,12 @@ import { productsAPI } from '../services/apiService';
 import Model3DViewer from '../components/Model3DViewer';
 import ParticleBackground from '../components/ParticleBackground';
 
+const getFirstColor = (colorStr) => {
+  if (!colorStr) return 'White';
+  const first = colorStr.split(',')[0]?.trim();
+  return first || 'White';
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
   const [trendingProducts, setTrendingProducts] = useState([]);
@@ -726,7 +732,10 @@ const HomePage = () => {
           ) : (
             <>
               <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-            {trendingProducts.map((product, index) => (
+            {trendingProducts.map((product, index) => {
+              const productColor = getFirstColor(product.color);
+
+              return (
               <Grid 
                 item 
                 xs={12} 
@@ -809,7 +818,7 @@ const HomePage = () => {
                       },
                     },
                   }}
-                  onClick={() => navigate(`/products`)}
+                  onClick={() => navigate(`/virtual-tryon?productId=${product.id}&color=${encodeURIComponent(productColor)}`)}
                 >
                   <Box 
                     className="product-image-container"
@@ -826,7 +835,7 @@ const HomePage = () => {
                         modelUrl={`http://localhost:8082${product.model3dUrl}`}
                         height={{ xs: 280, sm: 330, md: 380 }}
                         width="100%"
-                        productColor={product.color?.split(',')[0]?.trim() || 'White'}
+                        productColor={productColor}
                         productCategory={product.category}
                         showColorPicker={false}
                         showControls={false}
@@ -896,9 +905,10 @@ const HomePage = () => {
                     >
                       {product.name}
                     </Typography>
-                    <Typography variant="body2" color="#888" sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="#888" sx={{ mb: 1.5 }}>
                       {product.brand}
                     </Typography>
+
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography 
                         className="product-price"
@@ -962,7 +972,7 @@ const HomePage = () => {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate('/virtual-tryon');
+                        navigate(`/virtual-tryon?productId=${product.id}&color=${encodeURIComponent(productColor)}`);
                       }}
                     >
                       Try in 3D
@@ -970,7 +980,8 @@ const HomePage = () => {
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+            );
+          })}
           </Grid>
 
           {trendingProducts.length > 0 && (
