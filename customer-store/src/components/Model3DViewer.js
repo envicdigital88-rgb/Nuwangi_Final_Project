@@ -31,6 +31,8 @@ const Model3DViewer = forwardRef(({
   const clothingRef = useRef(null);
   const controlsRef = useRef(null);
   const sceneRef = useRef(null);
+  const pivotGroupRef = useRef(null); // Single group that holds avatar + clothing — rotated as one unit
+  const avatarBoundsRef = useRef(null); // Avatar bounds stored at load time (pivotGroup rotation=0)
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [isAutoRotating, setIsAutoRotating] = React.useState(autoRotate);
@@ -82,6 +84,12 @@ const Model3DViewer = forwardRef(({
     // Gradient-like background using fog for better product visibility
     scene.background = new THREE.Color(0x1a1a1a); // Dark gray instead of pure black
     scene.fog = new THREE.Fog(0x0a0a0a, 10, 50); // Subtle gradient effect
+
+    // Create a shared pivot group — avatar AND clothing are children of this group.
+    // Rotating the group guarantees clothing is always glued to the avatar's front.
+    const pivotGroup = new THREE.Group();
+    scene.add(pivotGroup);
+    pivotGroupRef.current = pivotGroup;
 
     // Camera setup - position camera to look at model from front
     const camera = new THREE.PerspectiveCamera(
@@ -267,9 +275,17 @@ const Model3DViewer = forwardRef(({
         }
       });
 
-      scene.add(object);
+      // Add avatar to the shared pivot group (NOT directly to scene)
+      pivotGroup.add(object);
       modelRef.current = object;
       sceneRef.current = scene;
+
+      // Store avatar bounding box NOW (pivotGroup.rotation.y = 0 at this point).
+      // This gives us stable, rotation-free local-space bounds for clothing alignment.
+      object.updateMatrixWorld(true);
+      avatarBoundsRef.current = new THREE.Box3().setFromObject(object);
+      console.log('Avatar bounds stored:', avatarBoundsRef.current);
+
       setLoading(false);
     };
 
@@ -396,9 +412,10 @@ const Model3DViewer = forwardRef(({
                 }
               });
               
-              scene.add(hairModel);
+              // Add hair to the shared pivot group so it rotates with the avatar
+              pivotGroup.add(hairModel);
               hairRef.current = hairModel;
-              console.log('Hair model added to scene at position:', hairModel.position);
+              console.log('Hair model added to pivot group at position:', hairModel.position);
               console.log('Hair model rotation:', hairModel.rotation);
               console.log('Hair model scale:', hairModel.scale);
             },
@@ -439,12 +456,32 @@ const Model3DViewer = forwardRef(({
             console.log('Clothing model object:', clothingModel);
             console.log('Clothing children count:', clothingModel.children.length);
             
-            // 1. Detect if clothing is pre-fitted to mannequin coordinate space
+            // ── SNAP rotation to 0 so all bounding-box calculations are in a clean
+            //    aligned coordinate space, not a partially-rotated one.
+            if (pivotGroupRef.current) pivotGroupRef.current.rotation.y = 0;
+
+            // Detect if clothing is pre-fitted to mannequin coordinate space
             const rawBox = new THREE.Box3().setFromObject(clothingModel);
+            const rawSize = rawBox.getSize(new THREE.Vector3());
             const rawMinY = rawBox.min.y;
             const rawMaxY = rawBox.max.y;
-            const rawSize = rawBox.getSize(new THREE.Vector3());
             const isPreFitted = (rawMinY > 10 || rawMaxY > 30) && ((clothingModelUrl || '').includes('_fitted') || rawSize.y > 10);
+
+            // ── Use hardcoded avatar dimensions derived from processLoadedModel.
+            // processLoadedModel always scales avatar to 3.5 units tall, centered at origin.
+            // Feet = -1.75, Head = +1.75, CenterX = 0, CenterZ = 0.
+            // Using hardcoded values is MORE reliable than bounding-box at runtime.
+            const mHeight  = 3.5;
+            const mMinY    = -1.75;
+            const mMaxY    = 1.75;
+            const mCenterX = 0;
+            const mCenterZ = 0;
+            // Approximate avatar torso width (avatar is scaled to 3.5 tall, ~0.5 wide shoulder-to-shoulder)
+            const mWidth   = avatarBoundsRef.current
+              ? (avatarBoundsRef.current.max.x - avatarBoundsRef.current.min.x)
+              : 0.9;
+
+            console.log('Avatar sizing constants — mHeight:', mHeight, 'mWidth:', mWidth, 'mMinY:', mMinY);
 
             if (isPreFitted && modelRef.current) {
               // Pre-fitted model shares 1-to-1 coordinate space with mannequin
@@ -453,63 +490,76 @@ const Model3DViewer = forwardRef(({
               clothingModel.position.copy(modelRef.current.position);
               console.log('✅ Applied 1-to-1 Pre-Fitted mesh alignment');
             } else {
-              // Raw product model (shirt.obj, pant.obj, suit.obj, dress.obj)
-              // Convert Blender Z-up if size.z > size.y
+              // ── Detect Z-up (Blender OBJ export) vs Y-up
               const isZUp = rawSize.z > rawSize.y;
               clothingModel.rotation.x = isZUp ? Math.PI / 2 : 0;
-              clothingModel.rotation.y = modelRef.current ? modelRef.current.rotation.y : Math.PI;
               clothingModel.rotation.z = 0;
-              clothingModel.updateMatrixWorld(true);
 
-              // Get mannequin world bounds
-              const mBox = modelRef.current ? new THREE.Box3().setFromObject(modelRef.current) : null;
-              const mHeight = mBox ? (mBox.max.y - mBox.min.y) : 3.5;
-              const mWidth = mBox ? (mBox.max.x - mBox.min.x) : 1.2;
-              const mMinY = mBox ? mBox.min.y : -1.75;
-              const mCenterX = mBox ? (mBox.min.x + mBox.max.x) / 2 : 0;
-              const mCenterZ = mBox ? (mBox.min.z + mBox.max.z) / 2 : 0;
+              // ── Find the correct Y rotation so clothing FRONT faces +Z (toward camera).
+              // Try both 0 and PI, pick whichever has center-Z closer to 0 (camera faces -Z, model front should be at min-Z).
+              clothingModel.rotation.y = 0;
+              clothingModel.updateMatrixWorld(true);
+              const testBox0 = new THREE.Box3().setFromObject(clothingModel);
+
+              clothingModel.rotation.y = Math.PI;
+              clothingModel.updateMatrixWorld(true);
+              const testBoxPI = new THREE.Box3().setFromObject(clothingModel);
+
+              // We want the clothing's "front" to be at more negative Z (facing camera at +Z).
+              // Pick the rotation that gives a more negative min.z (front face toward camera).
+              const bestRotY = testBox0.min.z < testBoxPI.min.z ? 0 : Math.PI;
+              clothingModel.rotation.y = bestRotY;
+              clothingModel.updateMatrixWorld(true);
+              console.log('Clothing best rotation.y =', bestRotY === 0 ? '0 (default)' : 'Math.PI (flipped)');
 
               const cat = (productCategory || '').toLowerCase();
               let targetClothingHeight;
-              let targetTopRatio; // Proportion from bottom of mannequin (0.0 = feet, 1.0 = top of head)
-              let targetWidthRatio = 0.50;
+              let targetTopRatio;   // How high the TOP of clothing sits (0=feet, 1=head)
+              let targetWidthRatio;
 
               if (cat.includes('dress') || cat.includes('frock') || cat.includes('gown')) {
-                targetClothingHeight = 0.68 * mHeight;
-                targetTopRatio = 0.82; // Shoulders
-                targetWidthRatio = 0.54;
+                targetClothingHeight = 0.75 * mHeight;  // Shoulder to below knee
+                targetTopRatio = 0.85;                  // Near shoulder
+                targetWidthRatio = 0.60;
               } else if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) {
-                targetClothingHeight = 0.55 * mHeight;
-                targetTopRatio = 0.60; // Waist
-                targetWidthRatio = 0.40;
+                targetClothingHeight = 0.52 * mHeight;  // Waist to ankle
+                targetTopRatio = 0.58;                  // Waist line
+                targetWidthRatio = 0.44;
               } else if (cat.includes('shirt') || cat.includes('top') || cat.includes('jacket') || cat.includes('coat') || cat.includes('suit')) {
-                targetClothingHeight = 0.38 * mHeight;
-                targetTopRatio = 0.82; // Shoulders
-                targetWidthRatio = 0.52;
+                targetClothingHeight = 0.42 * mHeight;  // Shoulder to hip
+                targetTopRatio = 0.85;                  // Near shoulder
+                targetWidthRatio = 0.56;
               } else {
-                targetClothingHeight = 0.65 * mHeight;
-                targetTopRatio = 0.80;
-                targetWidthRatio = 0.50;
+                targetClothingHeight = 0.72 * mHeight;
+                targetTopRatio = 0.84;
+                targetWidthRatio = 0.58;
               }
 
-              const rotatedBox = new THREE.Box3().setFromObject(clothingModel);
-              const rotatedSize = rotatedBox.getSize(new THREE.Vector3());
+              // Get rotated clothing dimensions
+              const rotatedBox2 = new THREE.Box3().setFromObject(clothingModel);
+              const rotatedSize2 = rotatedBox2.getSize(new THREE.Vector3());
+              console.log('Clothing rotated size:', rotatedSize2);
 
-              const scaleY = targetClothingHeight / (rotatedSize.y || 1);
-              const scaledWidth = rotatedSize.x * scaleY;
+              // Scale clothing height to target
+              const scaleY = targetClothingHeight / Math.max(rotatedSize2.y, 0.001);
+              // Also ensure clothing is wide enough to cover avatar torso
+              const scaledWidth = rotatedSize2.x * scaleY;
               const requiredWidth = mWidth * targetWidthRatio;
               let scaleX = scaleY;
-              if (scaledWidth < requiredWidth && rotatedSize.x > 0) {
+              if (scaledWidth < requiredWidth && rotatedSize2.x > 0) {
                 scaleX = scaleY * (requiredWidth / scaledWidth);
               }
 
-              clothingModel.scale.set(scaleX, scaleY, scaleX * 1.05);
+              clothingModel.scale.set(scaleX, scaleY, scaleX * 1.1);
               clothingModel.updateMatrixWorld(true);
 
+              // Compute final positioned bounds
               const finalBox = new THREE.Box3().setFromObject(clothingModel);
-              const finalTopY = finalBox.max.y;
               const finalCenterX = (finalBox.min.x + finalBox.max.x) / 2;
               const finalCenterZ = (finalBox.min.z + finalBox.max.z) / 2;
+              const finalTopY = finalBox.max.y;
+
+              // targetTopY: where the top of the clothing should sit in pivotGroup local Y
               const targetTopY = mMinY + (targetTopRatio * mHeight);
 
               clothingModel.position.set(
@@ -517,7 +567,7 @@ const Model3DViewer = forwardRef(({
                 targetTopY - finalTopY,
                 mCenterZ - finalCenterZ
               );
-              console.log('✅ Applied Auto-Fitted Mesh Alignment');
+              console.log('✅ Auto-fitted clothing — scale:', scaleX, scaleY, ' position:', clothingModel.position);
             }
             
             // Apply clothing material with product color & polygonOffset to eliminate clipping
@@ -574,10 +624,16 @@ const Model3DViewer = forwardRef(({
               console.log('Made mannequin semi-transparent, meshes:', mannequinMeshCount);
             }
             
-            scene.add(clothingModel);
+            // Add clothing to the SAME pivot group as the avatar.
+            // This locks clothing orientation permanently to the avatar's front face.
+            if (pivotGroupRef.current) {
+              pivotGroupRef.current.add(clothingModel);
+            } else {
+              scene.add(clothingModel); // fallback
+            }
             clothingRef.current = clothingModel;
-            console.log('=== CLOTHING MODEL ADDED TO SCENE ===');
-            console.log('Scene children count:', scene.children.length);
+            console.log('=== CLOTHING MODEL ADDED TO PIVOT GROUP ===');
+            console.log('Pivot group children count:', pivotGroupRef.current?.children.length);
           },
           (progress) => {
             const percent = (progress.loaded / progress.total * 100).toFixed(0);
@@ -605,16 +661,10 @@ const Model3DViewer = forwardRef(({
       
       if (isAutoRotatingRef.current) {
         const rotateSpeed = 2.0; // 2.0 radians/sec = fast and smooth
-        
-        // Rotate all loaded models together in sync
-        if (modelRef.current) {
-          modelRef.current.rotation.y += rotateSpeed * delta;
-        }
-        if (clothingRef.current) {
-          clothingRef.current.rotation.y += rotateSpeed * delta;
-        }
-        if (hairRef.current) {
-          hairRef.current.rotation.y += rotateSpeed * delta;
+        // Rotate the PIVOT GROUP — avatar + clothing + hair all rotate as one locked unit.
+        // This guarantees clothing front always faces the same direction as avatar front.
+        if (pivotGroupRef.current) {
+          pivotGroupRef.current.rotation.y += rotateSpeed * delta;
         }
       }
       
