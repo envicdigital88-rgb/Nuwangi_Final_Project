@@ -61,16 +61,32 @@ const VirtualTryOnViewer = ({ avatarModelUrl, clothingModelUrl, productCategory 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.dampingFactor = 0.03; // Smoother damping
     controls.target.set(0, 40, 0);
+    controls.autoRotate = false; // We rotate models directly for smooth performance
     controls.update();
     controlsRef.current = controls;
 
     // Load Models
     loadModels();
 
-    // Animation Loop
+    // Animation Loop — direct delta-time rotation for smooth, frame-rate independent spin
+    let lastTime = performance.now();
     const animate = () => {
       requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      const rotateSpeed = 2.0; // 2.0 radians/sec — fast and smooth
+      if (avatarRef.current) {
+        avatarRef.current.rotation.y += rotateSpeed * delta;
+      }
+      if (clothingRef.current) {
+        clothingRef.current.rotation.y += rotateSpeed * delta;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };

@@ -34,6 +34,7 @@ const Model3DViewer = forwardRef(({
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [isAutoRotating, setIsAutoRotating] = React.useState(autoRotate);
+  const isAutoRotatingRef = useRef(autoRotate); // Ref to avoid stale closure in animate loop
   const [selectedColor, setSelectedColor] = React.useState(productColor);
   const [containerSize, setContainerSize] = React.useState({ width: 400, height: 600 });
 
@@ -149,8 +150,7 @@ const Model3DViewer = forwardRef(({
     controls.minPolarAngle = Math.PI / 2; // Horizontal
     controls.maxPolarAngle = Math.PI / 2; // Horizontal
     
-    controls.autoRotate = autoRotate; // Use prop value
-    controls.autoRotateSpeed = 2.0; // Smooth rotation speed
+    controls.autoRotate = false; // We rotate the model group directly in the animate loop for smooth performance
     controls.enablePan = false; // Disable panning
     controls.target.set(0, 0, 0); // Rotate around center of model
     
@@ -593,10 +593,31 @@ const Model3DViewer = forwardRef(({
       console.log('No clothing model URL provided');
     }
 
-    // Animation loop
+    // Animation loop with delta time for super smooth, frame-rate independent rotation
+    let lastTime = performance.now();
     let animationId;
     const animate = () => {
       animationId = requestAnimationFrame(animate);
+      
+      const now = performance.now();
+      const delta = Math.min((now - lastTime) / 1000, 0.1); // Cap delta to prevent huge jumps
+      lastTime = now;
+      
+      if (isAutoRotatingRef.current) {
+        const rotateSpeed = 2.0; // 2.0 radians/sec = fast and smooth
+        
+        // Rotate all loaded models together in sync
+        if (modelRef.current) {
+          modelRef.current.rotation.y += rotateSpeed * delta;
+        }
+        if (clothingRef.current) {
+          clothingRef.current.rotation.y += rotateSpeed * delta;
+        }
+        if (hairRef.current) {
+          hairRef.current.rotation.y += rotateSpeed * delta;
+        }
+      }
+      
       controls.update();
       renderer.render(scene, camera);
     };
@@ -814,7 +835,7 @@ const Model3DViewer = forwardRef(({
   // Toggle auto-rotation
   const toggleAutoRotate = () => {
     if (controlsRef.current) {
-      controlsRef.current.autoRotate = !isAutoRotating;
+      isAutoRotatingRef.current = !isAutoRotating; // Update ref so animate loop sees the change immediately
       setIsAutoRotating(!isAutoRotating);
     }
   };
