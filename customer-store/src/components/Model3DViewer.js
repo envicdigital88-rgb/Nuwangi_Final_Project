@@ -464,28 +464,48 @@ const Model3DViewer = forwardRef(({
             // Get clothing dimensions AFTER rotation
             const clothingBox = new THREE.Box3().setFromObject(clothingModel);
             const clothingSize = clothingBox.getSize(new THREE.Vector3());
-            const clothingCenter = clothingBox.getCenter(new THREE.Vector3());
             
             console.log('Clothing size after rotation:', clothingSize);
-            console.log('Clothing center after rotation:', clothingCenter);
             
-            // Scale clothing to match mannequin size exactly
-            const clothingMaxDim = Math.max(clothingSize.x, clothingSize.y, clothingSize.z);
-            const targetClothingSize = 2.5; // Same as mannequin
-            const clothingScale = targetClothingSize / clothingMaxDim;
+            // === PERFECT FIT: Align clothing to mannequin using world bounding box ===
+            // Get the mannequin's actual world bounding box for reference
+            let mannequinWorldBox = null;
+            let mannequinHeight = 2.5;
+            let mannequinBottom = -1.25;
+            let mannequinCenterX = 0;
+            let mannequinCenterZ = 0;
+            
+            if (modelRef.current) {
+              mannequinWorldBox = new THREE.Box3().setFromObject(modelRef.current);
+              mannequinHeight = mannequinWorldBox.max.y - mannequinWorldBox.min.y;
+              mannequinBottom = mannequinWorldBox.min.y;
+              mannequinCenterX = (mannequinWorldBox.min.x + mannequinWorldBox.max.x) / 2;
+              mannequinCenterZ = (mannequinWorldBox.min.z + mannequinWorldBox.max.z) / 2;
+              console.log('Mannequin world box:', mannequinWorldBox);
+              console.log('Mannequin height:', mannequinHeight, 'bottom:', mannequinBottom);
+            }
+            
+            // Scale clothing so its HEIGHT exactly matches the mannequin's height
+            // This gives the most accurate anatomical fit
+            const clothingScale = mannequinHeight / clothingSize.y;
             clothingModel.scale.multiplyScalar(clothingScale);
+            console.log('Clothing scale (height-matched):', clothingScale);
             
-            console.log('Clothing scale:', clothingScale);
+            // Recalculate bounding box after scaling
+            clothingModel.updateMatrixWorld(true);
+            const scaledClothingBox = new THREE.Box3().setFromObject(clothingModel);
+            const scaledClothingCenterX = (scaledClothingBox.min.x + scaledClothingBox.max.x) / 2;
+            const scaledClothingCenterZ = (scaledClothingBox.min.z + scaledClothingBox.max.z) / 2;
             
-            // Position clothing to align perfectly with mannequin center
-            // Both models should be centered at (0, 0, 0)
+            // Align clothing bottom with mannequin bottom (feet-to-feet alignment)
+            // and center X/Z with mannequin center
             clothingModel.position.set(
-              -clothingCenter.x * clothingScale,
-              -clothingCenter.y * clothingScale,
-              -clothingCenter.z * clothingScale
+              mannequinCenterX - scaledClothingCenterX,
+              mannequinBottom - scaledClothingBox.min.y,
+              mannequinCenterZ - scaledClothingCenterZ
             );
             
-            console.log('Clothing final position:', clothingModel.position);
+            console.log('Clothing final position (bottom-aligned):', clothingModel.position);
             
             // Apply clothing material with product color
             let meshCount = 0;
