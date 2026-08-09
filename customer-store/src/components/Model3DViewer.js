@@ -451,60 +451,76 @@ const Model3DViewer = forwardRef(({
             console.log('Clothing model object:', clothingModel);
             console.log('Clothing children count:', clothingModel.children.length);
             
-            // 1. Copy exact rotation from base model so orientations match 100%
-            if (modelRef.current) {
-              clothingModel.rotation.copy(modelRef.current.rotation);
-            } else {
-              clothingModel.rotation.set(0, Math.PI, 0);
-            }
+            // 1. Convert Blender Z-Up coordinates to Three.js Y-Up & match base model orientation
+            const baseRotY = modelRef.current ? modelRef.current.rotation.y : Math.PI;
+            clothingModel.rotation.x = -Math.PI / 2; // Convert Blender Z-Up to Three.js Y-Up
+            clothingModel.rotation.y = baseRotY;      // Match avatar front facing angle
+            clothingModel.rotation.z = 0;
             clothingModel.updateMatrixWorld(true);
             
-            // 2. Get initial unscaled clothing dimensions AFTER rotation
+            // 2. Get true anatomical dimensions in Three.js space AFTER rotation
             const clothingBox = new THREE.Box3().setFromObject(clothingModel);
             const clothingSize = clothingBox.getSize(new THREE.Vector3());
-            
-            console.log('Unscaled clothing size after rotation:', clothingSize);
+            console.log('Unscaled clothing dimensions (Three.js space):', { x: clothingSize.x, y: clothingSize.y, z: clothingSize.z });
             
             // 3. Get mannequin world box and anatomical landmarks
             let mannequinBox = modelRef.current ? new THREE.Box3().setFromObject(modelRef.current) : null;
-            let mannequinHeight = 3.0;
-            let mannequinMinY = -1.5;
+            let mannequinHeight = 3.5;
+            let mannequinWidth = 1.2;
+            let mannequinMinY = -1.75;
             let mannequinCenterX = 0;
             let mannequinCenterZ = 0;
             
             if (mannequinBox) {
-              mannequinHeight = mannequinBox.max.y - mannequinBox.min.y;
+              const mSize = mannequinBox.getSize(new THREE.Vector3());
+              mannequinHeight = mSize.y;
+              mannequinWidth = mSize.x;
               mannequinMinY = mannequinBox.min.y;
               mannequinCenterX = (mannequinBox.min.x + mannequinBox.max.x) / 2;
               mannequinCenterZ = (mannequinBox.min.z + mannequinBox.max.z) / 2;
-              console.log('Mannequin world bounds:', { mannequinHeight, mannequinMinY, mannequinCenterX, mannequinCenterZ });
+              console.log('Mannequin world bounds:', { mannequinHeight, mannequinWidth, mannequinMinY, mannequinCenterX, mannequinCenterZ });
             }
             
             // 4. Determine anatomical proportion & target height for clothing
             const cat = (productCategory || '').toLowerCase();
             let targetClothingHeight;
             let targetTopRatio; // Proportion from bottom of mannequin (0.0 = feet, 1.0 = top of head)
+            let targetWidthRatio = 0.50; // Torso width ratio relative to total mannequin width
             
             if (cat.includes('dress') || cat.includes('frock')) {
               // Dress hangs from shoulders (~82% height) down to near ankles (~15% height)
               targetClothingHeight = 0.67 * mannequinHeight;
               targetTopRatio = 0.82;
+              targetWidthRatio = 0.54;
             } else if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) {
               // Pants hang from waist (~60% height) down to ankles (~5% height)
               targetClothingHeight = 0.55 * mannequinHeight;
               targetTopRatio = 0.60;
+              targetWidthRatio = 0.40;
             } else if (cat.includes('shirt') || cat.includes('top') || cat.includes('jacket') || cat.includes('coat') || cat.includes('suit')) {
               // Shirts hang from shoulders (~82% height) down to hips (~46% height)
-              targetClothingHeight = 0.36 * mannequinHeight;
+              targetClothingHeight = 0.38 * mannequinHeight;
               targetTopRatio = 0.82;
+              targetWidthRatio = 0.52;
             } else {
               targetClothingHeight = 0.65 * mannequinHeight;
               targetTopRatio = 0.80;
+              targetWidthRatio = 0.50;
             }
             
-            // 5. Apply proportional scale to clothing
-            const clothingScale = targetClothingHeight / (clothingSize.y || 1);
-            clothingModel.scale.set(clothingScale, clothingScale, clothingScale);
+            // 5. Calculate Y scale to match target height
+            const scaleY = targetClothingHeight / (clothingSize.y || 1);
+            
+            // Calculate required X scale so clothing covers the torso width without body clipping out
+            const scaledWidth = clothingSize.x * scaleY;
+            const requiredWidth = mannequinWidth * targetWidthRatio;
+            let scaleX = scaleY;
+            if (scaledWidth < requiredWidth && clothingSize.x > 0) {
+              scaleX = scaleY * (requiredWidth / scaledWidth);
+            }
+            
+            // Apply scale (X, Y, Z with slight depth padding for clean fit)
+            clothingModel.scale.set(scaleX, scaleY, scaleX * 1.08);
             clothingModel.updateMatrixWorld(true);
             
             // 6. Calculate scaled clothing bounding box
@@ -513,7 +529,7 @@ const Model3DViewer = forwardRef(({
             const scaledCenterX = (scaledClothingBox.min.x + scaledClothingBox.max.x) / 2;
             const scaledCenterZ = (scaledClothingBox.min.z + scaledClothingBox.max.z) / 2;
             
-            // Target top Y coordinate on mannequin
+            // Target top Y coordinate on mannequin (shoulders or waist)
             const targetTopY = mannequinMinY + (targetTopRatio * mannequinHeight);
             
             // 7. Align clothing to mannequin anatomically
@@ -523,7 +539,7 @@ const Model3DViewer = forwardRef(({
               mannequinCenterZ - scaledCenterZ
             );
             
-            console.log('✅ Clothing perfectly aligned to avatar at position:', clothingModel.position);
+            console.log('✅ Clothing perfectly fitted to avatar at position:', clothingModel.position);
             
             // Apply clothing material with product color
             let meshCount = 0;
