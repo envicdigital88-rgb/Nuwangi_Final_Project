@@ -7,6 +7,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Box, CircularProgress, Typography, IconButton, Tooltip } from '@mui/material';
 import { PlayArrow, Pause, ThreeSixty } from '@mui/icons-material';
 
+// Enable global caching for Three.js so models load instantaneously from memory when switching
+THREE.Cache.enabled = true;
+
 const Model3DViewer = forwardRef(({ 
   modelUrl, 
   hairModelUrl, 
@@ -350,9 +353,8 @@ const Model3DViewer = forwardRef(({
       
       console.log('Loading hair model:', hairFullUrl);
       
-      // Wait a bit for main model to load, then add hair
-      setTimeout(() => {
-        if (hairExtension === 'glb' || hairExtension === 'gltf' || hairExtension === 'hair') {
+      // Load hair immediately concurrently with the main model
+      if (hairExtension === 'glb' || hairExtension === 'gltf' || hairExtension === 'hair') {
           const gltfLoader = new GLTFLoader();
           gltfLoader.load(
             hairFullUrl,
@@ -429,7 +431,6 @@ const Model3DViewer = forwardRef(({
             }
           );
         }
-      }, 1500); // Wait 1.5 seconds for main model to load
     }
 
     // Load clothing model if provided - overlay on mannequin
@@ -441,9 +442,8 @@ const Model3DViewer = forwardRef(({
       console.log('Clothing URL:', clothingFullUrl);
       console.log('Clothing extension:', clothingExtension);
       
-      // Wait for mannequin to load, then add clothing
-      setTimeout(() => {
-        const loadClothingModel = (clothingExtension === 'glb' || clothingExtension === 'gltf') ? 
+      // Load clothing immediately concurrently with the main model
+      const loadClothingModel = (clothingExtension === 'glb' || clothingExtension === 'gltf') ?
           new GLTFLoader() : 
           (clothingExtension === 'fbx' ? new FBXLoader() : new OBJLoader());
         
@@ -496,62 +496,46 @@ const Model3DViewer = forwardRef(({
               clothingModel.rotation.x = isZUp ? Math.PI / 2 : 0;
               clothingModel.rotation.z = 0;
 
-              // ── Find the correct Y rotation so clothing FRONT faces +Z (toward camera).
-              // Try both 0 and PI, pick whichever has center-Z closer to 0 (camera faces -Z, model front should be at min-Z).
+              // ── Trust the original model's authored orientation (facing +Z).
+              // Do NOT flip Y arbitrarily.
               clothingModel.rotation.y = 0;
               clothingModel.updateMatrixWorld(true);
-              const testBox0 = new THREE.Box3().setFromObject(clothingModel);
-
-              clothingModel.rotation.y = Math.PI;
-              clothingModel.updateMatrixWorld(true);
-              const testBoxPI = new THREE.Box3().setFromObject(clothingModel);
-
-              // We want the clothing's "front" to be at more negative Z (facing camera at +Z).
-              // Pick the rotation that gives a more negative min.z (front face toward camera).
-              const bestRotY = testBox0.min.z < testBoxPI.min.z ? 0 : Math.PI;
-              clothingModel.rotation.y = bestRotY;
-              clothingModel.updateMatrixWorld(true);
-              console.log('Clothing best rotation.y =', bestRotY === 0 ? '0 (default)' : 'Math.PI (flipped)');
 
               const cat = (productCategory || '').toLowerCase();
-              let targetClothingHeight;
-              let targetTopRatio;   // How high the TOP of clothing sits (0=feet, 1=head)
-              let targetWidthRatio;
+              let targetTopRatio = 0.82; 
+              let zOffset = 0;
+              let targetMaxDim = 2.0;
+              let zStretch = 1.0;
 
               if (cat.includes('dress') || cat.includes('frock') || cat.includes('gown')) {
-                targetClothingHeight = 0.75 * mHeight;  // Shoulder to below knee
-                targetTopRatio = 0.85;                  // Near shoulder
-                targetWidthRatio = 0.60;
+                targetMaxDim = 1.85;    // Scaled down to prevent oversized straps/bulk
+                targetTopRatio = 0.86;  // Raised to perfectly sit on the shoulders
+                zOffset = 0;            // Centered perfectly
+                zStretch = 1.2;         // Slight depth boost to cover the back
               } else if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) {
-                targetClothingHeight = 0.52 * mHeight;  // Waist to ankle
-                targetTopRatio = 0.58;                  // Waist line
-                targetWidthRatio = 0.44;
+                targetMaxDim = 1.9;     // Pants are shorter than dresses
+                targetTopRatio = 0.52;  // Waist level
+                zOffset = 0;
               } else if (cat.includes('shirt') || cat.includes('top') || cat.includes('jacket') || cat.includes('coat') || cat.includes('suit')) {
-                targetClothingHeight = 0.42 * mHeight;  // Shoulder to hip
-                targetTopRatio = 0.85;                  // Near shoulder
-                targetWidthRatio = 0.56;
-              } else {
-                targetClothingHeight = 0.72 * mHeight;
-                targetTopRatio = 0.84;
-                targetWidthRatio = 0.58;
+                targetMaxDim = 1.8;     // Shirts are wider/shorter
+                targetTopRatio = 0.81;  // Shoulders
+                zOffset = 0;
               }
 
               // Get rotated clothing dimensions
               const rotatedBox2 = new THREE.Box3().setFromObject(clothingModel);
               const rotatedSize2 = rotatedBox2.getSize(new THREE.Vector3());
-              console.log('Clothing rotated size:', rotatedSize2);
+              const maxDim = Math.max(rotatedSize2.x, rotatedSize2.y, rotatedSize2.z, 0.001);
 
-              // Scale clothing height to target
-              const scaleY = targetClothingHeight / Math.max(rotatedSize2.y, 0.001);
-              // Also ensure clothing is wide enough to cover avatar torso
-              const scaledWidth = rotatedSize2.x * scaleY;
-              const requiredWidth = mWidth * targetWidthRatio;
-              let scaleX = scaleY;
-              if (scaledWidth < requiredWidth && rotatedSize2.x > 0) {
-                scaleX = scaleY * (requiredWidth / scaledWidth);
-              }
-
-              clothingModel.scale.set(scaleX, scaleY, scaleX * 1.1);
+              // Apply strict uniform scaling based on the largest dimension of the model
+              // This guarantees the model NEVER becomes a squished pancake or distorted noodle.
+              const uniformScale = targetMaxDim / maxDim;
+              
+              clothingModel.scale.set(
+                uniformScale, 
+                uniformScale, 
+                uniformScale * zStretch // Only dresses get a slight depth boost to prevent back clipping
+              );
               clothingModel.updateMatrixWorld(true);
 
               // Compute final positioned bounds
@@ -560,15 +544,15 @@ const Model3DViewer = forwardRef(({
               const finalCenterZ = (finalBox.min.z + finalBox.max.z) / 2;
               const finalTopY = finalBox.max.y;
 
-              // targetTopY: where the top of the clothing should sit in pivotGroup local Y
+              // Anchor the top of the bounding box to the avatar's targeted body part
               const targetTopY = mMinY + (targetTopRatio * mHeight);
 
               clothingModel.position.set(
                 mCenterX - finalCenterX,
                 targetTopY - finalTopY,
-                mCenterZ - finalCenterZ
+                mCenterZ - finalCenterZ + zOffset
               );
-              console.log('✅ Auto-fitted clothing — scale:', scaleX, scaleY, ' position:', clothingModel.position);
+              console.log('✅ Auto-fitted clothing — scale:', uniformScale, ' position:', clothingModel.position);
             }
             
             // Apply clothing material with product color & polygonOffset to eliminate clipping
@@ -656,7 +640,6 @@ const Model3DViewer = forwardRef(({
             console.error('Error:', error);
           }
         );
-      }, 2000); // Wait 2 seconds for mannequin to load
     } else {
       console.log('No clothing model URL provided');
     }
