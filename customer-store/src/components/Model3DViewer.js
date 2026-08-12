@@ -466,7 +466,7 @@ const Model3DViewer = forwardRef(({
             const rawSize = rawBox.getSize(new THREE.Vector3());
             const rawMinY = rawBox.min.y;
             const rawMaxY = rawBox.max.y;
-            const isPreFitted = (rawMinY > 10 || rawMaxY > 30) && ((clothingModelUrl || '').includes('_fitted') || rawSize.y > 10);
+            const isPreFitted = (clothingFullUrl || '').toLowerCase().includes('_fitted');
 
             // ── Use hardcoded avatar dimensions derived from processLoadedModel.
             // processLoadedModel always scales avatar to 3.5 units tall, centered at origin.
@@ -491,34 +491,61 @@ const Model3DViewer = forwardRef(({
               clothingModel.position.copy(modelRef.current.position);
               console.log('✅ Applied 1-to-1 Pre-Fitted mesh alignment');
             } else {
-              // ── Detect Z-up (Blender OBJ export) vs Y-up
-              const isZUp = rawSize.z > rawSize.y;
-              clothingModel.rotation.x = isZUp ? Math.PI / 2 : 0;
-              clothingModel.rotation.z = 0;
+              // ── Hardcoded fixes for specific test files that are exported backwards or miscategorized ──
+              const urlLower = (clothingFullUrl || '').toLowerCase();
+              
+              // We can no longer guess Z-up based on bounding boxes because it flips standard Y-up web models upside down!
+              // Instead, we only rotate the specific models you exported from Blender as Z-up.
+              let isZUp = false;
+              let yRotation = 0;
+              let effectiveCat = (productCategory || '').toLowerCase();
 
-              // ── Trust the original model's authored orientation (facing +Z).
-              // Do NOT flip Y arbitrarily.
-              clothingModel.rotation.y = 0;
+              if (urlLower.includes('suit.obj') || urlLower.includes('shirt.obj') || urlLower.includes('pant.obj')) {
+                isZUp = true; // Your custom Blender exports are Z-up
+              }
+
+              if (urlLower.includes('suit.obj')) {
+                effectiveCat = 'suit'; // Override 'Pants' from the database so it anchors to shoulders
+                yRotation = Math.PI;   // Rotate 180 degrees because the suit was modeled facing backwards
+              } else if (urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
+                effectiveCat = 'dress'; // The "Hoodie" is actually a dress model
+                yRotation = -Math.PI / 2; // The dress was modeled facing sideways (-X), rotate to face +Z
+              } else if (urlLower.includes('new_shirt.glb')) {
+                effectiveCat = 'shirt';
+                yRotation = Math.PI; // Spin 180 degrees to face the front
+              }
+              
+              // Rotate by -90 degrees (-Math.PI/2) to stand Z-up models upright.
+              clothingModel.rotation.x = isZUp ? -Math.PI / 2 : 0;
+              clothingModel.rotation.z = 0;
+              clothingModel.rotation.y = yRotation;
               clothingModel.updateMatrixWorld(true);
 
-              const cat = (productCategory || '').toLowerCase();
-              let targetTopRatio = 0.82; 
-              let zOffset = 0;
+              // Default target dimensions based on category
               let targetMaxDim = 2.0;
+              let targetTopRatio = 0.8;
+              let zOffset = 0;
               let zStretch = 1.0;
 
-              if (cat.includes('dress') || cat.includes('frock') || cat.includes('gown')) {
+              if (effectiveCat.includes('dress') || effectiveCat.includes('frock') || effectiveCat.includes('gown')) {
                 targetMaxDim = 1.85;    // Scaled down to prevent oversized straps/bulk
                 targetTopRatio = 0.86;  // Raised to perfectly sit on the shoulders
                 zOffset = 0;            // Centered perfectly
                 zStretch = 1.2;         // Slight depth boost to cover the back
-              } else if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) {
+              } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean')) {
                 targetMaxDim = 1.9;     // Pants are shorter than dresses
                 targetTopRatio = 0.52;  // Waist level
                 zOffset = 0;
-              } else if (cat.includes('shirt') || cat.includes('top') || cat.includes('jacket') || cat.includes('coat') || cat.includes('suit')) {
-                targetMaxDim = 1.8;     // Shirts are wider/shorter
-                targetTopRatio = 0.81;  // Shoulders
+              } else if (effectiveCat.includes('shirt') || effectiveCat.includes('top') || effectiveCat.includes('jacket') || effectiveCat.includes('coat') || effectiveCat.includes('suit') || effectiveCat.includes('hoodie') || effectiveCat.includes('blazer')) {
+                // The new generic T-shirt is extremely wide, so setting its max dimension to 1.8 made it huge.
+                if (urlLower.includes('new_shirt.glb')) {
+                  targetMaxDim = 1.05;    // Slightly larger to prevent side clipping
+                  targetTopRatio = 0.76;  // Lower to reveal the neck and head clearly
+                  zStretch = 1.3;         // Thicken the flat T-shirt on the Z-axis to cover the avatar's chest/back
+                } else {
+                  targetMaxDim = 1.8;     // Keep larger for the bulky red suit
+                  targetTopRatio = 0.81;  // Shoulders
+                }
                 zOffset = 0;
               }
 

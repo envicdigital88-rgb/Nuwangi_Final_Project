@@ -322,6 +322,10 @@ const AvatarCustomizationPage = () => {
                       showColorPicker={false}
                       productCategory="avatar"
                       autoRotate={true}
+                      initialSkinTone={customization.skinTone}
+                      initialHairColor={customization.hairColor}
+                      initialEyeColor={customization.eyeColor}
+                      applyAvatarCustomization={true}
                     />
                   </Box>
                 ) : (
