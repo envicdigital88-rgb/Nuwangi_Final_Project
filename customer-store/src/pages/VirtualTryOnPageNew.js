@@ -256,6 +256,9 @@ const VirtualTryOnPageNew = () => {
       const colors = product.color.split(',').map(c => c.trim());
       setSelectedColor(colors[0]);
     }
+    
+    // Automatically scroll to the virtual try-on viewer at the top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   const handleColorChange = (color) => {
