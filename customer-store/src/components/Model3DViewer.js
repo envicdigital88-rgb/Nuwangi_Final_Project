@@ -500,23 +500,31 @@ const Model3DViewer = forwardRef(({
               let yRotation = 0;
               let effectiveCat = (productCategory || '').toLowerCase();
 
-              if (urlLower.includes('suit.obj') || urlLower.includes('shirt.obj') || urlLower.includes('pant.obj')) {
-                isZUp = true; // Your custom Blender exports are Z-up
+              let xRotation = 0;
+
+              if (urlLower.includes('suit.obj') || urlLower.includes('pant.obj') || 
+                  urlLower.includes('real_suit.glb') || urlLower.includes('real_pants.glb')) {
+                xRotation = -Math.PI / 2; // These models were exported lying on their backs
+              } else if (urlLower.includes('shirt.obj') || urlLower.includes('real_shirt.glb')) {
+                xRotation = Math.PI / 2;  // The shirt was exported lying on its face (or flipped), so -90 makes it upside down, it needs +90!
               }
 
-              if (urlLower.includes('suit.obj')) {
+              if (urlLower.includes('suit.obj') || urlLower.includes('real_suit.glb')) {
                 effectiveCat = 'suit'; // Override 'Pants' from the database so it anchors to shoulders
                 yRotation = Math.PI;   // Rotate 180 degrees because the suit was modeled facing backwards
-              } else if (urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
+              } else if (urlLower.includes('shirt.obj') || urlLower.includes('real_shirt.glb')) {
+                effectiveCat = 'shirt'; 
+                yRotation = -Math.PI / 2; // The shirt was actually modeled facing sideways (like the dress), spin it 90 degrees!
+              } else if (urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj') || urlLower.includes('real_dress.glb')) {
                 effectiveCat = 'dress'; // The "Hoodie" is actually a dress model
-                yRotation = -Math.PI / 2; // The dress was modeled facing sideways (-X), rotate to face +Z
+                yRotation = 0; // The dress was likely modeled facing forward, do not spin it 90 degrees!
               } else if (urlLower.includes('new_shirt.glb')) {
                 effectiveCat = 'shirt';
                 yRotation = Math.PI; // Spin 180 degrees to face the front
               }
               
-              // Rotate by -90 degrees (-Math.PI/2) to stand Z-up models upright.
-              clothingModel.rotation.x = isZUp ? -Math.PI / 2 : 0;
+              // Apply explicit rotations to fix export orientations
+              clothingModel.rotation.x = xRotation;
               clothingModel.rotation.z = 0;
               clothingModel.rotation.y = yRotation;
               clothingModel.updateMatrixWorld(true);
@@ -528,12 +536,20 @@ const Model3DViewer = forwardRef(({
               let zStretch = 1.0;
 
               if (effectiveCat.includes('dress') || effectiveCat.includes('frock') || effectiveCat.includes('gown')) {
-                targetMaxDim = 1.85;    // Scaled down to prevent oversized straps/bulk
+                if (urlLower.includes('new_frock.glb')) {
+                  targetMaxDim = 1.1;     // Shrink procedural frock
+                } else {
+                  targetMaxDim = 1.85;    // Scaled down to prevent oversized straps/bulk
+                }
                 targetTopRatio = 0.86;  // Raised to perfectly sit on the shoulders
                 zOffset = 0;            // Centered perfectly
                 zStretch = 1.2;         // Slight depth boost to cover the back
-              } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean')) {
-                targetMaxDim = 1.9;     // Pants are shorter than dresses
+              } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean') || effectiveCat.includes('skirt')) {
+                if (urlLower.includes('new_skirt.glb')) {
+                  targetMaxDim = 0.8;     // The procedural skirt is very wide, shrink it
+                } else {
+                  targetMaxDim = 1.9;     // Pants are long
+                }
                 targetTopRatio = 0.52;  // Waist level
                 zOffset = 0;
               } else if (effectiveCat.includes('shirt') || effectiveCat.includes('top') || effectiveCat.includes('jacket') || effectiveCat.includes('coat') || effectiveCat.includes('suit') || effectiveCat.includes('hoodie') || effectiveCat.includes('blazer')) {
