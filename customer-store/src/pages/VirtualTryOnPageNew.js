@@ -93,6 +93,10 @@ const VirtualTryOnPageNew = () => {
     hips: 95,
     shoulders: 42,
   });
+
+  // Pagination state to prevent WebGL context crash
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 4; // Safest limit (4 grid + 1 avatar + 1 product viewer = 6 contexts)
   const [gender, setGender] = useState('female');
 
   // Products state
@@ -1226,6 +1230,7 @@ const VirtualTryOnPageNew = () => {
                 const fitB = productFitScores[b.id]?.fit_score || 0;
                 return fitB - fitA;
               })
+              .slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage)
               .map((product) => {
                 const fitData = productFitScores[product.id];
                 
@@ -1288,13 +1293,14 @@ const VirtualTryOnPageNew = () => {
                     background: 'radial-gradient(circle, #2a2a2a 0%, #0a0a0a 100%)'
                   }}>
                     {product.model3dUrl ? (
-                      <LazyModel3DViewer
+                      <Model3DViewer
                         modelUrl={`http://localhost:8082${product.model3dUrl}`}
                         height={380}
                         width="100%"
                         productColor={product.color?.split(',')[0]?.trim() || 'White'}
                         productCategory={product.category}
-                        imageUrl={product.imageUrl || product.image}
+                        showColorPicker={false}
+                        autoRotate={false}
                       />
                     ) : (
                       <CardMedia
@@ -1371,6 +1377,31 @@ const VirtualTryOnPageNew = () => {
               </Grid>
             )})}
           </Grid>
+
+          {/* Pagination Controls */}
+          {products.length > productsPerPage && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 2 }}>
+              <Button
+                variant="outlined"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                sx={{ color: '#fff', borderColor: '#333' }}
+              >
+                Previous Page
+              </Button>
+              <Typography sx={{ color: '#aaa', alignSelf: 'center' }}>
+                Page {currentPage} of {Math.ceil(products.length / productsPerPage)}
+              </Typography>
+              <Button
+                variant="outlined"
+                disabled={currentPage === Math.ceil(products.length / productsPerPage)}
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(products.length / productsPerPage), prev + 1))}
+                sx={{ color: '#fff', borderColor: '#333' }}
+              >
+                Next Page
+              </Button>
+            </Box>
+          )}
         </Card>
       </Box>
     </Container>

@@ -521,6 +521,10 @@ const Model3DViewer = forwardRef(({
               } else if (urlLower.includes('new_shirt.glb')) {
                 effectiveCat = 'shirt';
                 yRotation = Math.PI; // Spin 180 degrees to face the front
+              } else if (effectiveCat.includes('frock') || effectiveCat.includes('dress') || effectiveCat.includes('gown')) {
+                if (!urlLower.includes('real_dress') && !urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
+                  yRotation = Math.PI; // Generic frocks face backward, spin 180 degrees
+                }
               }
               
               // Apply explicit rotations to fix export orientations
@@ -538,12 +542,13 @@ const Model3DViewer = forwardRef(({
               if (effectiveCat.includes('dress') || effectiveCat.includes('frock') || effectiveCat.includes('gown')) {
                 if (urlLower.includes('new_frock.glb')) {
                   targetMaxDim = 1.1;     // Shrink procedural frock
+                  targetTopRatio = 0.81;
                 } else {
-                  targetMaxDim = 1.85;    // Scaled down to prevent oversized straps/bulk
+                  targetMaxDim = 1.6;     // Standard dress length
+                  targetTopRatio = 1.08;  // PULL UP significantly. The generic dress model has empty space above the straps in its bounding box. 1.08 anchors it much higher.
                 }
-                targetTopRatio = 0.86;  // Raised to perfectly sit on the shoulders
-                zOffset = 0;            // Centered perfectly
-                zStretch = 1.2;         // Slight depth boost to cover the back
+                zOffset = 0;            
+                zStretch = 1.25;        // Give it a bit more depth to cover the chest
               } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean') || effectiveCat.includes('skirt')) {
                 if (urlLower.includes('new_skirt.glb')) {
                   targetMaxDim = 0.8;     // The procedural skirt is very wide, shrink it
