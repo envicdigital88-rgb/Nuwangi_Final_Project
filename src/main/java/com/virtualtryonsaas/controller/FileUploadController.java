@@ -98,35 +98,43 @@ public class FileUploadController {
     @GetMapping("/models/list")
     public ResponseEntity<?> listAvailableModels() {
         try {
-            Path modelsPath = Paths.get(UPLOAD_DIR + "models");
-            
-            if (!Files.exists(modelsPath)) {
-                return ResponseEntity.ok(Map.of("models", new String[0]));
-            }
+            Path rootModelsPath = Paths.get(UPLOAD_DIR + "models");
+            Path staticModelsPath = Paths.get("src/main/resources/static/uploads/models");
             
             java.util.List<Map<String, String>> models = new java.util.ArrayList<>();
             
-            Files.walk(modelsPath)
-                .filter(Files::isRegularFile)
-                .filter(path -> {
-                    String filename = path.getFileName().toString().toLowerCase();
-                    return filename.endsWith(".obj") || filename.endsWith(".glb") || 
-                           filename.endsWith(".gltf") || filename.endsWith(".fbx");
-                })
-                .forEach(path -> {
-                    try {
-                        String relativePath = modelsPath.relativize(path).toString().replace("\\", "/");
-                        String url = "/uploads/models/" + relativePath;
-                        String filename = path.getFileName().toString();
-                        Map<String, String> model = new HashMap<>();
-                        model.put("filename", filename);
-                        model.put("url", url);
-                        model.put("name", filename.substring(0, filename.lastIndexOf(".")));
-                        models.add(model);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+            java.util.List<Path> pathsToScan = java.util.Arrays.asList(rootModelsPath, staticModelsPath);
+            
+            for (Path modelsPath : pathsToScan) {
+                if (Files.exists(modelsPath)) {
+                    Files.walk(modelsPath)
+                        .filter(Files::isRegularFile)
+                        .filter(path -> {
+                            String filename = path.getFileName().toString().toLowerCase();
+                            return filename.endsWith(".obj") || filename.endsWith(".glb") || 
+                                   filename.endsWith(".gltf") || filename.endsWith(".fbx");
+                        })
+                        .forEach(path -> {
+                            try {
+                                String relativePath = modelsPath.relativize(path).toString().replace("\\", "/");
+                                String url = "/uploads/models/" + relativePath;
+                                String filename = path.getFileName().toString();
+                                
+                                // Avoid duplicates if the same file exists in both places
+                                boolean alreadyExists = models.stream().anyMatch(m -> m.get("filename").equals(filename));
+                                if (!alreadyExists) {
+                                    Map<String, String> model = new HashMap<>();
+                                    model.put("filename", filename);
+                                    model.put("url", url);
+                                    model.put("name", filename.substring(0, filename.lastIndexOf(".")));
+                                    models.add(model);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                }
+            }
             
             return ResponseEntity.ok(Map.of("models", models));
             
