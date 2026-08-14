@@ -516,7 +516,7 @@ const VirtualTryOnPageNew = () => {
                         clothingModelUrl={clothingUrl}
                         width="100%"
                         height={400}
-                        productCategory={selectedProduct ? (selectedProduct.category || selectedProduct.name) : 'avatar'}
+                        productCategory={selectedProduct ? `${selectedProduct.category || ''} ${selectedProduct.name || ''} ${selectedProduct.brand || ''}`.trim() : 'avatar'}
                         productColor={activeColor}
                         showColorPicker={false}
                         showControls={false}

@@ -51,6 +51,10 @@ public class ProductService {
         product.setCategory(request.getCategory());
         product.setSizeChart(request.getSizeChart());
         product.setAvailableSizes(request.getAvailableSizes());
+        if (request.getStatus() != null) {
+            product.setStatus(request.getStatus());
+        }
+        product.setCareInstructions(request.getCareInstructions());
 
         Product savedProduct = productRepository.save(product);
         return convertToDto(savedProduct);
@@ -71,6 +75,13 @@ public class ProductService {
         product.setCategory(request.getCategory());
         product.setSizeChart(request.getSizeChart());
         product.setAvailableSizes(request.getAvailableSizes());
+        product.setBarcode(request.getBarcode());
+        product.setSku(request.getSku());
+        product.setCategoryId(request.getCategoryId());
+        if (request.getStatus() != null) {
+            product.setStatus(request.getStatus());
+        }
+        product.setCareInstructions(request.getCareInstructions());
 
         Product savedProduct = productRepository.save(product);
         return convertToDto(savedProduct);

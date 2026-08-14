@@ -29,6 +29,7 @@ public class ProductRequest {
     private String category;
     private String sizeChart;
     private String availableSizes;
+    private String status;
 
     // Constructors
     public ProductRequest() {}
@@ -78,4 +79,7 @@ public class ProductRequest {
 
     public String getAvailableSizes() { return availableSizes; }
     public void setAvailableSizes(String availableSizes) { this.availableSizes = availableSizes; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

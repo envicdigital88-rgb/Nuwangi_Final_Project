@@ -499,12 +499,11 @@ const Model3DViewer = forwardRef(({
               let isZUp = false;
               let yRotation = 0;
               let effectiveCat = (productCategory || '').toLowerCase();
-
-              let xRotation = 0;
+              let xRotation = null;
 
               if (urlLower.includes('suit.obj') || urlLower.includes('pant.obj') || 
                   urlLower.includes('real_suit.glb') || urlLower.includes('real_pants.glb')) {
-                xRotation = -Math.PI / 2; // These models were exported lying on their backs
+                xRotation = -Math.PI / 2; // These specific models were exported lying on their backs, stand them up
               } else if (urlLower.includes('shirt.obj') || urlLower.includes('real_shirt.glb')) {
                 xRotation = Math.PI / 2;  // The shirt was exported lying on its face (or flipped), so -90 makes it upside down, it needs +90!
               }
@@ -525,12 +524,16 @@ const Model3DViewer = forwardRef(({
                 if (!urlLower.includes('real_dress') && !urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
                   yRotation = Math.PI; // Generic frocks face backward, spin 180 degrees
                 }
+              } else if (effectiveCat.includes('pant') || effectiveCat.includes('jean') || effectiveCat.includes('trouser') || effectiveCat.includes('denim')) {
+                yRotation = Math.PI; // Standalone jeans from the new batch also face backwards when stood up
               }
               
               // Apply explicit rotations to fix export orientations
-              clothingModel.rotation.x = xRotation;
-              clothingModel.rotation.z = 0;
-              clothingModel.rotation.y = yRotation;
+              if (xRotation !== null) {
+                clothingModel.rotation.x = xRotation;
+                clothingModel.rotation.z = 0;
+              }
+              clothingModel.rotation.y += yRotation;
               clothingModel.updateMatrixWorld(true);
 
               // Default target dimensions based on category
@@ -549,13 +552,15 @@ const Model3DViewer = forwardRef(({
                 }
                 zOffset = 0;            
                 zStretch = 1.25;        // Give it a bit more depth to cover the chest
-              } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean') || effectiveCat.includes('skirt')) {
+              } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean') || effectiveCat.includes('skirt') || effectiveCat.includes('denim') || effectiveCat.includes('bottom')) {
                 if (urlLower.includes('new_skirt.glb')) {
                   targetMaxDim = 0.8;     // The procedural skirt is very wide, shrink it
                 } else {
-                  targetMaxDim = 1.9;     // Pants are long
+                  targetMaxDim = 1.05;    // Scale generic jeans/pants to a reasonable size so they don't look massive
                 }
                 targetTopRatio = 0.52;  // Waist level
+                zOffset = 0;
+                zStretch = 1.2;         // Expand slightly on Z axis to fit over the avatar's hips
                 zOffset = 0;
               } else if (effectiveCat.includes('shirt') || effectiveCat.includes('top') || effectiveCat.includes('jacket') || effectiveCat.includes('coat') || effectiveCat.includes('suit') || effectiveCat.includes('hoodie') || effectiveCat.includes('blazer')) {
                 // The new generic T-shirt is extremely wide, so setting its max dimension to 1.8 made it huge.
