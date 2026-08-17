@@ -3,11 +3,22 @@ AI Model Training Web UI
 A beautiful web interface to train your AI model - perfect for demos!
 """
 
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request, send_file, session, redirect, url_for
 from flask_cors import CORS
+import requests
 import json
 import os
 import time
+import sys
+
+try:
+    if sys.stdout.encoding.lower() != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+    if sys.stderr.encoding.lower() != 'utf-8':
+        sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
 import threading
 from datetime import datetime
 import numpy as np
@@ -20,7 +31,69 @@ from train_measurement_model import MeasurementModelTrainer
 from train_gender_model import GenderDetectionTrainer
 
 app = Flask(__name__)
-CORS(app)
+app.secret_key = 'super_secret_ai_training_key_for_admin_portal'
+CORS(app, supports_credentials=True)
+
+# Authentication Hook
+@app.before_request
+def check_auth():
+    # Allow static files and the login route
+    if request.endpoint in ['login', 'static'] or request.path.startswith('/static/'):
+        return
+        
+    # Check if user is authenticated in session
+    if not session.get('authenticated'):
+        # For API routes, return 401
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Unauthorized'}), 401
+        # For UI routes, redirect to login
+        return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        if session.get('authenticated'):
+            return redirect(url_for('index'))
+        return render_template('login.html')
+        
+    # Handle POST login
+    data = request.json if request.is_json else request.form
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'success': False, 'message': 'Email and password are required'}), 400
+        
+    try:
+        # Verify credentials against the Spring Boot backend
+        response = requests.post(
+            'http://localhost:8082/api/auth/admin/login',
+            json={'email': email, 'password': password},
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            session['authenticated'] = True
+            session['email'] = email
+            return jsonify({'success': True, 'message': 'Authentication successful'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid admin credentials'}), 401
+            
+    except Exception as e:
+        print(f"Auth error: {e}")
+        # Fallback for demo purposes if backend is down (using standard admin creds)
+        if email == 'admin@example.com' and password == 'admin123':
+            session['authenticated'] = True
+            session['email'] = email
+            return jsonify({'success': True, 'message': 'Authentication successful (Fallback mode)'})
+            
+        return jsonify({'success': False, 'message': 'Failed to connect to authentication server'}), 500
+
+@app.route('/logout')
+def logout():
+    session.pop('authenticated', None)
+    session.pop('email', None)
+    return redirect(url_for('login'))
 
 # Initialize measurement model trainer
 try:

@@ -239,7 +239,7 @@ const DashboardPage = () => {
                       mb: 1,
                       borderLeft: 3,
                       borderColor: activity.color,
-                      bgcolor: 'grey.50',
+                      bgcolor: 'background.default',
                       borderRadius: 1,
                     }}
                   >

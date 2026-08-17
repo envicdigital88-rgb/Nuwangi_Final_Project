@@ -23,12 +23,18 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const token = localStorage.getItem('admin_token');
+      const storedUser = localStorage.getItem('admin_user');
       if (token) {
-        // Token exists, set as authenticated
         setIsAuthenticated(true);
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser({ email: 'admin@example.com' });
+        }
       }
     } catch (error) {
       localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -49,12 +55,14 @@ export const AuthProvider = ({ children }) => {
     };
     
     localStorage.setItem('admin_token', token);
+    localStorage.setItem('admin_user', JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
   };
 
   const logout = () => {
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
     setUser(null);
     setIsAuthenticated(false);
   };

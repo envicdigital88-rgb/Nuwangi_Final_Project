@@ -548,9 +548,16 @@ const Model3DViewer = forwardRef(({
               let targetTopRatio = 0.8;
               let zOffset = 0;
               let zStretch = 1.0;
+              let xStretch = 1.0;
 
               if (effectiveCat.includes('dress') || effectiveCat.includes('frock') || effectiveCat.includes('gown')) {
-                if (urlLower.includes('real_dress') || urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
+                if (urlLower.includes('gray_dress_side_')) {
+                  targetMaxDim = 2.2;     // Height 2.2
+                  targetTopRatio = 0.77;  // Anchor at shoulders
+                  xStretch = 1.35;        // Widen it to fit shoulders
+                  zStretch = 1.35;        // Thicken it slightly
+                  zOffset = -0.15;        // Push backward to align with spine (avatar bounds are skewed forward by toes)
+                } else if (urlLower.includes('real_dress') || urlLower.includes('model-cmnoivjrn09p0u3mht6w5esfm.obj')) {
                   targetMaxDim = 1.6;
                   targetTopRatio = 1.08;
                 } else if (urlLower.includes('new_frock.glb')) {
@@ -564,7 +571,7 @@ const Model3DViewer = forwardRef(({
                   targetTopRatio = 0.81;
                 }
                 zOffset = 0;            
-                zStretch = 1.25;        // Give it a bit more depth to cover the chest
+                if (zStretch === 1.0) zStretch = 1.25; // Apply default depth boost if not overridden
               } else if (effectiveCat.includes('pant') || effectiveCat.includes('trouser') || effectiveCat.includes('jean') || effectiveCat.includes('skirt') || effectiveCat.includes('denim') || effectiveCat.includes('bottom')) {
                 if (urlLower.includes('new_skirt.glb')) {
                   targetMaxDim = 0.8;     // The procedural skirt is very wide, shrink it
@@ -603,9 +610,9 @@ const Model3DViewer = forwardRef(({
               const uniformScale = targetMaxDim / maxDim;
               
               clothingModel.scale.set(
+                uniformScale * xStretch, 
                 uniformScale, 
-                uniformScale, 
-                uniformScale * zStretch // Only dresses get a slight depth boost to prevent back clipping
+                uniformScale * zStretch // Depth boost
               );
               clothingModel.updateMatrixWorld(true);
 

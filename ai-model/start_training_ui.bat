@@ -16,6 +16,7 @@ echo ============================================================
 echo.
 
 cd /d "%~dp0"
+set PYTHONUTF8=1
 python training_ui.py
 
 pause

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { QueryClient, QueryClientProvider } from 'react-query';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -85,7 +86,23 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Box 
+        sx={{ 
+          height: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'
+        }}
+      >
+        <CircularProgress size={60} thickness={4} sx={{ color: '#8b5cf6', mb: 3 }} />
+        <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 500, letterSpacing: 1 }}>
+          Initializing Workspace...
+        </Typography>
+      </Box>
+    );
   }
   
   return isAuthenticated ? children : <Navigate to="/login" />;
