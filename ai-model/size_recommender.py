@@ -9,22 +9,38 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import pickle
 import json
+import os
+import time
 
 class SizeRecommender:
     def __init__(self):
         self.model = None
         self.scaler = StandardScaler()
         self.size_labels = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+        self.model_accuracy = 85.0
+        self.model_path = 'models/size_recommender.pkl'
+        self.last_load_time = 0
         
-        # Load trained model if exists
+        self._load_model()
+        
+    def _load_model(self):
+        """Dynamically load or hot-reload the trained model if modified"""
         try:
-            with open('models/size_recommender.pkl', 'rb') as f:
-                data = pickle.load(f)
-                self.model = data['model']
-                self.scaler = data['scaler']
-            print("✓ Loaded trained size recommender")
-        except:
-            print("⚠ No trained model - will use rule-based system")
+            if not os.path.exists(self.model_path):
+                print("⚠ No trained model - will use rule-based system")
+                return
+                
+            current_mtime = os.path.getmtime(self.model_path)
+            if current_mtime > self.last_load_time:
+                with open(self.model_path, 'rb') as f:
+                    data = pickle.load(f)
+                    self.model = data['model']
+                    self.scaler = data['scaler']
+                    self.model_accuracy = data.get('accuracy', 0.85) * 100
+                self.last_load_time = current_mtime
+                print("✓ Loaded trained size recommender (hot-reloaded)")
+        except Exception as e:
+            print(f"⚠ Error loading model: {e}")
     
     def recommend_size(self, measurements, gender='female', clothing_type='shirt'):
         """
@@ -36,8 +52,10 @@ class SizeRecommender:
             clothing_type: 'shirt', 'pants', 'dress', etc.
             
         Returns:
-            dict: Recommended size, confidence, and alternatives
+            dict with recommended_size, confidence, alternatives
         """
+        self._load_model()  # Ensure model is up to date before predicting
+        
         chest = measurements.get('chest_cm', 88)
         waist = measurements.get('waist_cm', 72)
         hip = measurements.get('hip_cm', 95)
@@ -72,6 +90,7 @@ class SizeRecommender:
         return {
             'recommended_size': recommended_size,
             'confidence': round(confidence * 100, 1),
+            'model_accuracy': round(self.model_accuracy, 1),
             'alternatives': alternatives,
             'fit_notes': self._generate_fit_notes(measurements, recommended_size, clothing_type)
         }

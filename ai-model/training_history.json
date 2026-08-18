@@ -38,5 +38,45 @@
     "training_accuracy": 97.64,
     "testing_accuracy": 94.29,
     "duration": 0.5
+  },
+  {
+    "session": 6,
+    "timestamp": "2026-08-18 13:35:51",
+    "training_samples": 4000,
+    "training_accuracy": 96.1,
+    "testing_accuracy": 91.3,
+    "duration": 0.89
+  },
+  {
+    "session": 7,
+    "timestamp": "2026-08-18 13:39:15",
+    "training_samples": 4052,
+    "training_accuracy": 95.78,
+    "testing_accuracy": 91.71,
+    "duration": 0.89
+  },
+  {
+    "session": 8,
+    "timestamp": "2026-08-18 13:43:52",
+    "training_samples": 4090,
+    "training_accuracy": 95.31,
+    "testing_accuracy": 91.4,
+    "duration": 0.92
+  },
+  {
+    "session": 9,
+    "timestamp": "2026-08-18 13:44:06",
+    "training_samples": 4090,
+    "training_accuracy": 95.31,
+    "testing_accuracy": 91.4,
+    "duration": 0.87
+  },
+  {
+    "session": 10,
+    "timestamp": "2026-08-18 13:51:10",
+    "training_samples": 4090,
+    "training_accuracy": 95.31,
+    "testing_accuracy": 91.4,
+    "duration": 0.9
   }
 ]

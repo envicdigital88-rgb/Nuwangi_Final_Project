@@ -129,7 +129,7 @@ if __name__ == "__main__":
     
     # Generate size recommendation training data
     print("1. Generating Size Recommendation Training Data...")
-    size_data = generate_size_training_data(num_samples=2000)  # Increased to 2000
+    size_data = generate_size_training_data(num_samples=5000)  # Increased to 5000 for maximum accuracy
     save_training_data(size_data, 'training_data_size.json')
     
     print()

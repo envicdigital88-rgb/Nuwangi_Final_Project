@@ -340,7 +340,7 @@ const AIRecommendations = ({ bodyProfile, selectedProduct }) => {
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
-            Powered by AI • {sizeRec.confidence || 85}% accuracy
+            Powered by AI • {sizeRec.model_accuracy || 85}% model accuracy
           </Typography>
         </Box>
       </CardContent>
