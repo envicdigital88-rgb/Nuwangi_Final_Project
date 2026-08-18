@@ -120,46 +120,6 @@
     "gender": "male"
   },
   {
-    "image_path": "training_photos\\sample_male_16.jpg",
-    "height_cm": 172.0,
-    "chest_cm": 92.0,
-    "waist_cm": 77.0,
-    "hip_cm": 93.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_17.jpg",
-    "height_cm": 182.0,
-    "chest_cm": 104.0,
-    "waist_cm": 88.0,
-    "hip_cm": 102.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_18.jpg",
-    "height_cm": 176.0,
-    "chest_cm": 98.0,
-    "waist_cm": 82.0,
-    "hip_cm": 96.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_19.jpg",
-    "height_cm": 188.0,
-    "chest_cm": 112.0,
-    "waist_cm": 96.0,
-    "hip_cm": 110.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_20.jpg",
-    "height_cm": 174.0,
-    "chest_cm": 95.0,
-    "waist_cm": 79.0,
-    "hip_cm": 94.0,
-    "gender": "male"
-  },
-  {
     "image_path": "training_photos\\sample_female_01.jpg",
     "height_cm": 162.0,
     "chest_cm": 84.0,
@@ -277,46 +237,6 @@
     "chest_cm": 100.0,
     "waist_cm": 84.0,
     "hip_cm": 98.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_16.jpg",
-    "height_cm": 172.0,
-    "chest_cm": 92.0,
-    "waist_cm": 77.0,
-    "hip_cm": 93.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_17.jpg",
-    "height_cm": 182.0,
-    "chest_cm": 104.0,
-    "waist_cm": 88.0,
-    "hip_cm": 102.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_18.jpg",
-    "height_cm": 176.0,
-    "chest_cm": 98.0,
-    "waist_cm": 82.0,
-    "hip_cm": 96.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_19.jpg",
-    "height_cm": 188.0,
-    "chest_cm": 112.0,
-    "waist_cm": 96.0,
-    "hip_cm": 110.0,
-    "gender": "male"
-  },
-  {
-    "image_path": "training_photos\\sample_male_20.jpg",
-    "height_cm": 174.0,
-    "chest_cm": 95.0,
-    "waist_cm": 79.0,
-    "hip_cm": 94.0,
     "gender": "male"
   },
   {
