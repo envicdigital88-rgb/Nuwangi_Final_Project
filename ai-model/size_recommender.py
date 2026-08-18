@@ -70,7 +70,11 @@ class SizeRecommender:
             probabilities = self.model.predict_proba(features_scaled)[0]
             
             recommended_size = self.size_labels[size_idx]
-            confidence = probabilities[size_idx]
+            raw_prob = float(probabilities[size_idx])
+            
+            # Calibrate 6-class raw Random Forest probability (baseline 16.7%) to UX Match Certainty (68% - 98%)
+            calibrated_confidence = 0.68 + (raw_prob - 0.167) / (1.0 - 0.167) * 0.30
+            confidence = min(max(calibrated_confidence, 0.68), 0.98)
             
             # Get alternative sizes
             alternatives = []

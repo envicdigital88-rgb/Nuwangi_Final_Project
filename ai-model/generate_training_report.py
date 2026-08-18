@@ -73,8 +73,9 @@ def generate_report():
     
     # Training Data
     if os.path.exists('training_data_size.json'):
-        with open('training_data_size.json', 'r') as f:
+        with open('training_data_size.json', 'r', encoding='utf-8') as f:
             training_data = json.load(f)
+
         
         report_lines.append("-" * 70)
         report_lines.append("TRAINING DATA")
@@ -106,7 +107,7 @@ def generate_report():
     
     # Training History
     if os.path.exists('training_history.json'):
-        with open('training_history.json', 'r') as f:
+        with open('training_history.json', 'r', encoding='utf-8') as f:
             history = json.load(f)
         
         report_lines.append("-" * 70)
@@ -193,7 +194,7 @@ def generate_report():
     
     # Save to file
     report_filename = f"TRAINING_REPORT_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    with open(report_filename, 'w') as f:
+    with open(report_filename, 'w', encoding='utf-8') as f:
         f.write(report_text)
     
     print(f"\n✓ Report saved to: {report_filename}")

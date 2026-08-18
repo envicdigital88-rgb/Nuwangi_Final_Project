@@ -29,10 +29,14 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import pickle
 from train_measurement_model import MeasurementModelTrainer
 from train_gender_model import GenderDetectionTrainer
+from body_measurement_extractor import BodyMeasurementExtractor
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_ai_training_key_for_admin_portal'
 CORS(app, supports_credentials=True)
+
+# Initialize body measurement extractor validator
+measurement_extractor = BodyMeasurementExtractor()
 
 # Authentication Hook
 @app.before_request
@@ -96,13 +100,16 @@ def logout():
     return redirect(url_for('login'))
 
 # Initialize measurement model trainer
+MEASUREMENT_TRAINING_FILE = 'training_data/measurement_training_data.json'
 try:
     measurement_trainer = MeasurementModelTrainer()
+    measurement_trainer.load_training_data(MEASUREMENT_TRAINING_FILE)
     print("✓ Measurement trainer initialized")
 except Exception as e:
     print(f"⚠ Measurement trainer initialization warning: {e}")
     print("⚠ Measurement training features may be limited")
     measurement_trainer = None
+
 
 # Initialize gender detection trainer
 try:
@@ -798,48 +805,50 @@ def extract_from_photo():
                             gender_method = 'trained-model'
                             print(f"✓ Using trained gender model: {detected_gender} ({gender_confidence*100:.1f}%)")
                     
-                    # Fallback to ratio-based detection if no trained model
+                    # Fallback to ratio-based detection if no trained model or model unavailable
                     if detected_gender == 'unknown':
-                        chest = measurements['chest_cm']
-                        waist = measurements['waist_cm']
-                        hip = measurements['hip_cm']
-                        shoulder_width = measurements.get('shoulder_width_cm', chest / 2.2)
+                        chest = float(measurements.get('chest_cm', 88))
+                        waist = float(measurements.get('waist_cm', 72))
+                        hip = float(measurements.get('hip_cm', 95))
                         
-                        # Calculate ratios for gender detection
-                        shoulder_hip_ratio = shoulder_width / (hip / 2.0) if hip > 0 else 1.0
-                        waist_hip_ratio = waist / hip if hip > 0 else 1.0
-                        
-                        # Gender detection logic
                         male_score = 0
                         female_score = 0
                         
-                        # Shoulder-hip ratio (males: >0.95, females: <0.85)
-                        if shoulder_hip_ratio > 0.95:
-                            male_score += 2
-                        elif shoulder_hip_ratio < 0.85:
-                            female_score += 2
-                        else:
-                            male_score += 1
-                            female_score += 1
+                        # 1. Waist-to-Hip Ratio (WHR) - Females: <0.81, Males: >=0.84
+                        if hip > 0:
+                            whr = waist / hip
+                            if whr <= 0.80:
+                                female_score += 3
+                            elif whr >= 0.84:
+                                male_score += 3
+                            else:
+                                female_score += 1
+                                male_score += 1
                         
-                        # Waist-hip ratio (males: >0.85, females: <0.80)
-                        if waist_hip_ratio > 0.85:
-                            male_score += 1
-                        elif waist_hip_ratio < 0.80:
-                            female_score += 1
+                        # 2. Hip-to-Chest Ratio - Females: Hips >= Chest, Males: Chest > Hips
+                        if chest > 0 and hip > 0:
+                            hcr = hip / chest
+                            if hcr >= 1.02:
+                                female_score += 3
+                            elif hcr <= 0.95:
+                                male_score += 3
+                            else:
+                                female_score += 1
+                                male_score += 1
                         
-                        # Hip-chest ratio (females typically have larger hips relative to chest)
-                        hip_chest_ratio = hip / chest if chest > 0 else 1.0
-                        if hip_chest_ratio > 1.05:
-                            female_score += 1
-                        elif hip_chest_ratio < 0.95:
-                            male_score += 1
-                        
-                        # Determine gender
-                        detected_gender = 'male' if male_score > female_score else 'female'
-                        gender_confidence = max(male_score, female_score) / (male_score + female_score) if (male_score + female_score) > 0 else 0.5
-                        gender_method = 'ratio-based (no trained model)'
-                        print(f"⚠ Using ratio-based gender detection: {detected_gender} ({gender_confidence*100:.1f}%)")
+                        # 3. Waist-to-Chest Ratio
+                        if chest > 0:
+                            wcr = waist / chest
+                            if wcr <= 0.78:
+                                female_score += 2
+                            elif wcr >= 0.83:
+                                male_score += 2
+
+                        detected_gender = 'female' if female_score > male_score else 'male'
+                        gender_confidence = max(female_score, male_score) / max(female_score + male_score, 1)
+                        gender_method = 'anthropometric-ratio'
+                        print(f"✓ Gender detected via anthropometric ratios: {detected_gender} (Female score: {female_score}, Male score: {male_score})")
+
                     
                     # Clean up temp file
                     os.remove(temp_path)
@@ -864,14 +873,20 @@ def extract_from_photo():
                     os.remove(temp_path)
                     return jsonify({
                         'success': False,
-                        'error': result.get('message', 'Failed to extract measurements')
+                        'error': result.get('error') or result.get('message', 'Failed to extract measurements')
                     }), 400
             else:
                 os.remove(temp_path)
+                error_msg = 'No human detected in photo. Please upload a clear photo of a person.'
+                try:
+                    err_json = response.json()
+                    error_msg = err_json.get('error') or err_json.get('message') or error_msg
+                except Exception:
+                    pass
                 return jsonify({
                     'success': False,
-                    'error': 'AI service error'
-                }), 500
+                    'error': error_msg
+                }), 400
                 
         except Exception as e:
             if os.path.exists(temp_path):
@@ -916,10 +931,18 @@ def add_measurement_sample():
         filepath = os.path.join('training_photos', filename)
         photo.save(filepath)
         
+        # Validate that uploaded photo is human
+        is_human, human_msg = measurement_extractor.validate_human_image(filepath)
+        if not is_human:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'success': False, 'error': human_msg}), 400
+
         # Add to measurement trainer
         success = measurement_trainer.add_training_sample(
             filepath, height_cm, chest_cm, waist_cm, hip_cm, gender
         )
+
         
         if not success:
             return jsonify({
@@ -1021,9 +1044,18 @@ def get_measurement_stats():
     })
 
 
+@app.route('/training_photos/<path:filename>')
+def serve_training_photo(filename):
+    """Serve uploaded training photo images"""
+    from flask import send_from_directory
+    return send_from_directory('training_photos', filename)
+
+
 @app.route('/api/measurement/samples', methods=['GET'])
 def get_measurement_samples():
     """Get list of measurement training samples"""
+    if not measurement_trainer:
+        return jsonify({'samples': [], 'count': 0})
     samples = []
     for sample in measurement_trainer.training_data:
         samples.append({
@@ -1035,6 +1067,40 @@ def get_measurement_samples():
             'hip': sample['hip_cm']
         })
     return jsonify({'samples': samples, 'count': len(samples)})
+
+
+@app.route('/api/measurement/sample/delete', methods=['POST'])
+def delete_measurement_sample():
+    """Delete a training sample by filename"""
+    if not measurement_trainer:
+        return jsonify({'success': False, 'error': 'Trainer unavailable'}), 503
+    try:
+        data = request.get_json() or {}
+        image_name = data.get('image')
+        if not image_name:
+            return jsonify({'success': False, 'error': 'No image name provided'}), 400
+
+        # Filter out the matching sample
+        before_count = len(measurement_trainer.training_data)
+        measurement_trainer.training_data = [
+            s for s in measurement_trainer.training_data
+            if os.path.basename(s['image_path']) != image_name
+        ]
+        
+        # Save updated list to file
+        measurement_trainer.save_training_data(MEASUREMENT_TRAINING_FILE)
+        
+        # Delete file from disk if it exists
+        photo_path = os.path.join('training_photos', image_name)
+        if os.path.exists(photo_path):
+            os.remove(photo_path)
+            
+        print(f"✓ Deleted sample: {image_name} (Remaining: {len(measurement_trainer.training_data)})")
+        return jsonify({'success': True, 'count': len(measurement_trainer.training_data)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 
 
 @app.route('/api/measurement/train', methods=['POST'])

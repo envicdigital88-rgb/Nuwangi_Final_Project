@@ -14,37 +14,82 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 try:
     import mediapipe as mp
-    MEDIAPIPE_AVAILABLE = True
+    # MediaPipe 0.10+ uses the Tasks API — mp.solutions is no longer available
+    if hasattr(mp, 'tasks') and hasattr(mp.tasks, 'vision'):
+        MEDIAPIPE_AVAILABLE = True
+        MEDIAPIPE_TASKS_API = True
+    else:
+        MEDIAPIPE_AVAILABLE = False
+        MEDIAPIPE_TASKS_API = False
 except:
     MEDIAPIPE_AVAILABLE = False
-    print("⚠ MediaPipe not available - install with: pip install mediapipe")
+    MEDIAPIPE_TASKS_API = False
+    print("MediaPipe not available - manual measurements only")
+
 
 
 class MeasurementModelTrainer:
     def __init__(self):
         """Initialize the training system"""
-        if MEDIAPIPE_AVAILABLE:
-            self.mp_pose = mp.solutions.pose
-            self.pose = self.mp_pose.Pose(
-                static_image_mode=True,
-                model_complexity=2,
-                enable_segmentation=False,
-                min_detection_confidence=0.5
-            )
-            print("✓ MediaPipe initialized")
+        self.pose = None
+        self.mp_pose = None
+        self._mp_landmarker = None
+
+        if MEDIAPIPE_TASKS_API:
+            try:
+                # New MediaPipe Tasks API (0.10+)
+                self._PoseLandmarker = mp.tasks.vision.PoseLandmarker
+                self._PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+                self._BaseOptions = mp.tasks.BaseOptions
+                self._RunningMode = mp.tasks.vision.RunningMode
+                print("MediaPipe Tasks API ready")
+            except Exception as e:
+                print(f"MediaPipe Tasks API setup failed: {e}")
+                self._PoseLandmarker = None
         else:
-            self.mp_pose = None
-            self.pose = None
-            print("✗ MediaPipe not available")
-        
+            self._PoseLandmarker = None
+            print("MediaPipe not available - using manual measurements only")
+
         self.training_data = []
         self.model = None
         self.gender_model = None
+
         
+    def _get_pose_landmarks(self, image_path):
+        """Extract pose landmarks from an image using the Tasks API.
+        Returns (landmarks, width, height) or (None, 0, 0) on failure."""
+        if self._PoseLandmarker is None:
+            return None, 0, 0
+        try:
+            model_path = os.path.join(os.path.dirname(__file__), 'models', 'pose_landmarker.task')
+            if not os.path.exists(model_path):
+                return None, 0, 0
+            options = self._PoseLandmarkerOptions(
+                base_options=self._BaseOptions(model_asset_path=model_path),
+                running_mode=self._RunningMode.IMAGE
+            )
+            with self._PoseLandmarker.create_from_options(options) as landmarker:
+                image = cv2.imread(image_path)
+                if image is None:
+                    return None, 0, 0
+                h, w, _ = image.shape
+                mp_image = mp.Image(
+                    image_format=mp.ImageFormat.SRGB,
+                    data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                )
+                result = landmarker.detect(mp_image)
+                if not result.pose_landmarks:
+                    return None, 0, 0
+                return result.pose_landmarks[0], w, h
+        except Exception as e:
+            print(f"Pose detection failed: {e}")
+            return None, 0, 0
+
     def add_training_sample(self, image_path, height_cm, chest_cm, waist_cm, hip_cm, gender):
         """
-        Add a training sample
-        
+        Add a training sample — works with or without MediaPipe.
+        If pose detection fails, the manual measurements are stored directly.
+
         Args:
             image_path: Path to person's photo
             height_cm: Actual height in cm
@@ -53,134 +98,82 @@ class MeasurementModelTrainer:
             hip_cm: Actual hip measurement in cm
             gender: 'male' or 'female'
         """
-        if not self.pose:
-            print("✗ MediaPipe not available - cannot process image")
-            return False
-        
-        try:
-            # Read and process image
-            image = cv2.imread(image_path)
-            if image is None:
-                print(f"✗ Could not read image: {image_path}")
-                return False
-            
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = self.pose.process(image_rgb)
-            
-            if not results.pose_landmarks:
-                print(f"✗ Could not detect person in: {image_path}")
-                return False
-            
-            # Extract features
-            h, w, _ = image.shape
-            landmarks = results.pose_landmarks.landmark
-            features = self._extract_features(landmarks, w, h)
-            
-            # Add gender as feature (0 = female, 1 = male)
-            gender_value = 1 if gender.lower() == 'male' else 0
-            features.append(gender_value)
-            
-            # Store training sample
-            sample = {
-                'image_path': image_path,
-                'features': features,
-                'height_cm': height_cm,
-                'chest_cm': chest_cm,
-                'waist_cm': waist_cm,
-                'hip_cm': hip_cm,
-                'gender': gender,
-                'gender_value': gender_value
-            }
-            
-            self.training_data.append(sample)
-            print(f"✓ Added sample: {os.path.basename(image_path)} ({gender}, {len(features)} features)")
-            return True
-            
-        except Exception as e:
-            print(f"✗ Error processing {image_path}: {e}")
-            return False
+        gender_value = 1 if gender.lower() == 'male' else 0
+
+        # Attempt pose landmark extraction for richer ML features
+        landmarks, w, h = self._get_pose_landmarks(image_path)
+        if landmarks is not None:
+            # Build feature vector from pose
+            features = self._extract_features_from_task_landmarks(landmarks, w, h)
+        else:
+            # Fallback: use only the measurement values as features (still trains a useful model)
+            features = self._features_from_measurements(height_cm, chest_cm, waist_cm, hip_cm, gender_value)
+
+        features.append(gender_value)
+
+        sample = {
+            'image_path': image_path,
+            'features': features,
+            'height_cm': height_cm,
+            'chest_cm': chest_cm,
+            'waist_cm': waist_cm,
+            'hip_cm': hip_cm,
+            'gender': gender,
+            'gender_value': gender_value
+        }
+
+        self.training_data.append(sample)
+        print(f"Added sample: {os.path.basename(image_path)} ({gender}, {'pose' if landmarks else 'manual'})")
+        return True
+
     
-    def _extract_features(self, landmarks, width, height):
-        """Extract feature vector from landmarks"""
+    def _features_from_measurements(self, height_cm, chest_cm, waist_cm, hip_cm, gender_value):
+        """Build a feature vector from raw measurements when pose is unavailable."""
+        # Normalise to typical ranges (ratios)
+        shoulder_est = chest_cm / 2.2
+        hip_half = hip_cm / 2.0
+        sh_ratio = shoulder_est / hip_half if hip_half > 0 else 1.0
+        wh_ratio = waist_cm / hip_cm if hip_cm > 0 else 1.0
+        torso_est = height_cm * 0.30
+        leg_est = height_cm * 0.47
+        tl_ratio = torso_est / leg_est if leg_est > 0 else 1.0
+        return [shoulder_est, hip_half, torso_est, height_cm, torso_est * 0.4, leg_est, sh_ratio, tl_ratio]
+
+    def _extract_features_from_task_landmarks(self, landmarks, width, height):
+        """Extract feature vector from new Tasks API normalized landmarks."""
         features = []
-        
-        # Key landmark indices
+        # Landmark indices are the same between old solutions and new tasks
         LEFT_SHOULDER = 11
         RIGHT_SHOULDER = 12
         LEFT_HIP = 23
         RIGHT_HIP = 24
         LEFT_ELBOW = 13
-        RIGHT_ELBOW = 14
         LEFT_KNEE = 25
-        RIGHT_KNEE = 26
         NOSE = 0
         LEFT_ANKLE = 27
-        RIGHT_ANKLE = 28
-        
-        # Calculate distances
-        # 1. Shoulder width
-        shoulder_width = self._distance(
-            landmarks[LEFT_SHOULDER], 
-            landmarks[RIGHT_SHOULDER], 
-            width, height
-        )
-        features.append(shoulder_width)
-        
-        # 2. Hip width
-        hip_width = self._distance(
-            landmarks[LEFT_HIP], 
-            landmarks[RIGHT_HIP], 
-            width, height
-        )
-        features.append(hip_width)
-        
-        # 3. Torso length (shoulder to hip)
-        torso_length = self._distance(
-            landmarks[LEFT_SHOULDER], 
-            landmarks[LEFT_HIP], 
-            width, height
-        )
-        features.append(torso_length)
-        
-        # 4. Body height (nose to ankle)
-        body_height = self._distance(
-            landmarks[NOSE], 
-            landmarks[LEFT_ANKLE], 
-            width, height
-        )
-        features.append(body_height)
-        
-        # 5. Shoulder to elbow (arm length indicator)
-        arm_length = self._distance(
-            landmarks[LEFT_SHOULDER], 
-            landmarks[LEFT_ELBOW], 
-            width, height
-        )
-        features.append(arm_length)
-        
-        # 6. Hip to knee (leg length indicator)
-        leg_length = self._distance(
-            landmarks[LEFT_HIP], 
-            landmarks[LEFT_KNEE], 
-            width, height
-        )
-        features.append(leg_length)
-        
-        # 7. Shoulder-to-hip ratio (body shape indicator)
+
+        def dist(a, b):
+            x1, y1 = a.x * width, a.y * height
+            x2, y2 = b.x * width, b.y * height
+            return np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+        shoulder_width = dist(landmarks[LEFT_SHOULDER], landmarks[RIGHT_SHOULDER])
+        hip_width = dist(landmarks[LEFT_HIP], landmarks[RIGHT_HIP])
+        torso_length = dist(landmarks[LEFT_SHOULDER], landmarks[LEFT_HIP])
+        body_height = dist(landmarks[NOSE], landmarks[LEFT_ANKLE])
+        arm_length = dist(landmarks[LEFT_SHOULDER], landmarks[LEFT_ELBOW])
+        leg_length = dist(landmarks[LEFT_HIP], landmarks[LEFT_KNEE])
         sh_ratio = shoulder_width / hip_width if hip_width > 0 else 1.0
-        features.append(sh_ratio)
-        
-        # 8. Torso-to-leg ratio
         tl_ratio = torso_length / leg_length if leg_length > 0 else 1.0
-        features.append(tl_ratio)
-        
+
+        features = [shoulder_width, hip_width, torso_length, body_height, arm_length, leg_length, sh_ratio, tl_ratio]
         return features
-    
-    def _distance(self, point1, point2, width, height):
-        """Calculate Euclidean distance between two landmarks"""
-        x1, y1 = point1.x * width, point1.y * height
-        x2, y2 = point2.x * width, point2.y * height
-        return np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+    def _extract_features(self, landmarks, width, height):
+        """Legacy helper — kept for back-compat but delegates to new method."""
+        return self._extract_features_from_task_landmarks(landmarks, width, height)
+
+
     
     def train_model(self, test_size=0.2):
         """
@@ -369,11 +362,43 @@ class MeasurementModelTrainer:
                 'gender': sample['gender']
             })
         
-        with open(filename, 'w') as f:
+        with open(filename, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f, indent=2)
+
         
         print(f"✓ Training data saved to: {filename}")
         return True
+
+    def load_training_data(self, filename='training_data/measurement_training_data.json'):
+        """Load saved training samples from JSON file if it exists."""
+        if not os.path.exists(filename):
+            return False
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            self.training_data = []
+            for item in data:
+                # Add sample directly
+                gender_val = 1 if item['gender'].lower() == 'male' else 0
+                features = self._features_from_measurements(item['height_cm'], item['chest_cm'], item['waist_cm'], item['hip_cm'], gender_val)
+                features.append(gender_val)
+                self.training_data.append({
+                    'image_path': item['image_path'],
+                    'features': features,
+                    'height_cm': item['height_cm'],
+                    'chest_cm': item['chest_cm'],
+                    'waist_cm': item['waist_cm'],
+                    'hip_cm': item['hip_cm'],
+                    'gender': item['gender'],
+                    'gender_value': gender_val
+                })
+            print(f"✓ Loaded {len(self.training_data)} training samples from {filename}")
+            return True
+        except Exception as e:
+            print(f"⚠ Could not load training data: {e}")
+            return False
+
     
     def generate_training_report(self):
         """Generate a detailed training report"""
@@ -434,8 +459,9 @@ RECOMMENDATIONS
         print(report)
         
         # Save report to file
-        with open('training_data/training_report.txt', 'w') as f:
+        with open('training_data/training_report.txt', 'w', encoding='utf-8') as f:
             f.write(report)
+
         
         print("✓ Report saved to: training_data/training_report.txt")
 

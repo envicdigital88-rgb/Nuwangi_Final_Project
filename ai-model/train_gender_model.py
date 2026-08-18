@@ -14,30 +14,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 try:
     import mediapipe as mp
-    MEDIAPIPE_AVAILABLE = True
+    MEDIAPIPE_AVAILABLE = hasattr(mp, 'tasks') and hasattr(mp.tasks, 'vision')
 except:
     MEDIAPIPE_AVAILABLE = False
-    print("⚠ MediaPipe not available")
 
 
 class GenderDetectionTrainer:
     def __init__(self):
         """Initialize the gender detection training system"""
+        self.mp_pose = None
+        self.pose = None
         if MEDIAPIPE_AVAILABLE:
-            try:
-                self.mp_pose = mp.solutions.pose
-                self.pose = self.mp_pose.Pose(
-                    static_image_mode=True,
-                    model_complexity=2,
-                    enable_segmentation=False,
-                    min_detection_confidence=0.5
-                )
-                print("✓ MediaPipe initialized for gender detection")
-            except Exception as e:
-                print(f"⚠ MediaPipe initialization failed: {e}")
-                self.mp_pose = None
-                self.pose = None
+            print("✓ MediaPipe ready for gender detection")
         else:
+            print("⚠ MediaPipe not available - using fallback gender detection")
+
             self.mp_pose = None
             self.pose = None
         

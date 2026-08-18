@@ -86,11 +86,13 @@ def extract_measurements():
         })
         
     except Exception as e:
+        if os.path.exists(filepath):
+            os.remove(filepath)
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to extract measurements'
-        }), 500
+            'message': str(e)
+        }), 400
 
 
 @app.route('/api/ai/recommend-size', methods=['POST'])

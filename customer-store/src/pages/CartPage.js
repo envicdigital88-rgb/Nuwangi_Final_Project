@@ -24,10 +24,60 @@ import {
   LocalShipping,
   Security,
   CheckCircle,
+  Checkroom,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import Model3DViewer from '../components/Model3DViewer';
+
+const CartItemImage = ({ item }) => {
+  const [imageError, setImageError] = useState(false);
+  const rawUrl = item.imageUrl || item.image;
+  
+  let formattedUrl = rawUrl;
+  if (rawUrl && !rawUrl.startsWith('http') && !rawUrl.startsWith('data:')) {
+    formattedUrl = `http://localhost:8082${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  }
+
+  if (imageError || !formattedUrl) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+          color: '#94a3b8',
+          p: 1.5,
+          textAlign: 'center'
+        }}
+      >
+        <Checkroom sx={{ fontSize: 52, color: '#6366f1', mb: 0.5 }} />
+        <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.7rem', lineHeight: 1.1 }}>
+          {item.name}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <CardMedia
+      component="img"
+      image={formattedUrl}
+      alt={item.name}
+      onError={() => setImageError(true)}
+      sx={{ 
+        height: '100%',
+        width: '100%',
+        objectFit: 'contain',
+        p: 1
+      }}
+    />
+  );
+};
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -182,14 +232,7 @@ const CartPage = () => {
                               showColorPicker={false}
                               autoRotate={false}
                             />
-                          ) : (
-                            <CardMedia
-                              component="img"
-                              height="200"
-                              image={item.imageUrl || item.image}
-                              alt={item.name}
-                              sx={{ objectFit: 'contain' }}
-                            />
+                            <CartItemImage item={item} />
                           )}
                         </Box>
                       </Grid>

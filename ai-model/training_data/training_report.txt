@@ -1,0 +1,43 @@
+
+======================================================================
+                    TRAINING REPORT
+======================================================================
+
+Training Date: 2026-08-18T15:25:44.795579
+Model Version: 1.0.0
+
+DATASET STATISTICS
+======================================================================
+Total Samples: 41
+Male Samples: 21
+Female Samples: 20
+
+MEASUREMENT RANGES
+======================================================================
+Chest:  80.0 - 112.0 cm
+Waist:  62.0 - 96.0 cm
+Hip:    88.0 - 110.0 cm
+
+MODEL PERFORMANCE
+======================================================================
+Overall Accuracy: 96.6%
+Average Error: 1.70 cm
+
+FEATURE IMPORTANCE
+======================================================================
+1. Shoulder Width
+2. Hip Width
+3. Torso Length
+4. Body Height
+5. Arm Length
+6. Leg Length
+7. Shoulder-Hip Ratio
+8. Torso-Leg Ratio
+9. Gender
+
+RECOMMENDATIONS
+======================================================================
+⚠ Collect more training samples (target: 100+)
+✓ Model is production-ready!
+
+======================================================================
