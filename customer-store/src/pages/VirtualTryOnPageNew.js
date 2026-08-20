@@ -21,6 +21,44 @@ import { productsAPI } from '../services/apiService';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import axios from 'axios';
 
+// ── Color Swatch Helper ───────────────────────────────────────────────────────
+const getColorHex = (colorName) => {
+  const map = {
+    red: '#e53e3e', blue: '#3182ce', green: '#38a169', yellow: '#d69e2e',
+    orange: '#dd6b20', purple: '#805ad5', pink: '#d53f8c', white: '#ffffff',
+    black: '#1a1a1a', gray: '#718096', grey: '#718096', brown: '#744210',
+    navy: '#1a365d', beige: '#f5f0e8', cream: '#fffdd0', maroon: '#800000',
+    teal: '#2c7a7b', cyan: '#00b5d8', magenta: '#b83280', gold: '#b7791f',
+    silver: '#a0aec0', lavender: '#9f7aea', mint: '#38b2ac', coral: '#fc8181',
+    indigo: '#4c51bf', violet: '#6b46c1', lime: '#84cc16', rose: '#f43f5e',
+  };
+  return map[colorName.toLowerCase().trim()] || '#888888';
+};
+
+const ColorSwatches = ({ colorStr }) => {
+  if (!colorStr) return null;
+  const colors = colorStr.split(',').map(c => c.trim()).filter(Boolean);
+  if (colors.length === 0) return null;
+  return (
+    <Box sx={{ display: 'flex', gap: 0.6, mt: 0.75, mb: 0.5, flexWrap: 'wrap' }}>
+      {colors.map((color, i) => (
+        <Box
+          key={i}
+          title={color}
+          sx={{
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            bgcolor: getColorHex(color),
+            border: color.toLowerCase().trim() === 'white' ? '1px solid #555' : '1px solid rgba(255,255,255,0.25)',
+            flexShrink: 0,
+          }}
+        />
+      ))}
+    </Box>
+  );
+};
+
 // ── LazyModel3DViewer ─────────────────────────────────────────────────────────
 // Only mounts the WebGL context when the card is visible in the viewport.
 // Browsers allow only ~8-16 WebGL contexts simultaneously. Rendering all product
@@ -1339,6 +1377,9 @@ const VirtualTryOnPageNew = () => {
                     <Typography variant="body2" color="#888" noWrap sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       {product.brand}
                     </Typography>
+
+                    {/* Color Swatches — auto-displayed from product.color field */}
+                    <ColorSwatches colorStr={product.color} />
                     
                     {fitData && (
                       <Box sx={{ mt: 1, mb: 1 }}>

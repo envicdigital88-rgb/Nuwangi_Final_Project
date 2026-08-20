@@ -5,6 +5,45 @@ import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { productsAPI } from '../services/apiService';
 import Model3DViewer from '../components/Model3DViewer';
 
+// ── Color Swatch Helper ───────────────────────────────────────────────────────
+const getColorHex = (colorName) => {
+  const map = {
+    red: '#e53e3e', blue: '#3182ce', green: '#38a169', yellow: '#d69e2e',
+    orange: '#dd6b20', purple: '#805ad5', pink: '#d53f8c', white: '#ffffff',
+    black: '#1a1a1a', gray: '#718096', grey: '#718096', brown: '#744210',
+    navy: '#1a365d', beige: '#f5f0e8', cream: '#fffdd0', maroon: '#800000',
+    teal: '#2c7a7b', cyan: '#00b5d8', magenta: '#b83280', gold: '#b7791f',
+    silver: '#a0aec0', lavender: '#9f7aea', mint: '#38b2ac', coral: '#fc8181',
+    indigo: '#4c51bf', violet: '#6b46c1', lime: '#84cc16', rose: '#f43f5e',
+  };
+  return map[colorName.toLowerCase().trim()] || '#888888';
+};
+
+const ColorSwatches = ({ colorStr }) => {
+  if (!colorStr) return null;
+  const colors = colorStr.split(',').map(c => c.trim()).filter(Boolean);
+  if (colors.length === 0) return null;
+  return (
+    <Box sx={{ display: 'flex', gap: 0.6, mt: 1, mb: 1, flexWrap: 'wrap' }}>
+      {colors.map((color, i) => (
+        <Box
+          key={i}
+          title={color}
+          sx={{
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            bgcolor: getColorHex(color),
+            border: color.toLowerCase().trim() === 'white' ? '1px solid #555' : '1px solid rgba(255,255,255,0.25)',
+            flexShrink: 0,
+          }}
+        />
+      ))}
+    </Box>
+  );
+};
+
+
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -267,6 +306,10 @@ const ProductsPage = () => {
                 }}>
                   {product.description}
                 </Typography>
+
+                {/* Color Swatches — auto-displayed from product.color field */}
+                <ColorSwatches colorStr={product.color} />
+
                 <Box sx={{
                   display: 'inline-block',
                   px: 1.5,

@@ -10,6 +10,41 @@ import { PlayArrow, Pause, ThreeSixty } from '@mui/icons-material';
 // Enable global caching for Three.js so models load instantaneously from memory when switching
 THREE.Cache.enabled = true;
 
+// Helper to convert any color name, hex code, or comma-separated color string into a numeric Three.js hex color
+export const parseColorToHex = (colorInput) => {
+  if (!colorInput) return 0xdddddd;
+  if (typeof colorInput === 'number') return colorInput;
+
+  const colorMap = {
+    'white': 0xFFFFFF, 'black': 0x222222, 'red': 0xDC143C, 'blue': 0x3182CE,
+    'navy': 0x1A365D, 'green': 0x2E8540, 'yellow': 0xD69E2E, 'pink': 0xFF69B4,
+    'purple': 0x9370DB, 'orange': 0xDD6B20, 'gray': 0x718096, 'grey': 0x718096,
+    'brown': 0x8B4513, 'beige': 0xF5F5DC, 'cream': 0xFFFDD0, 'maroon': 0x800000,
+    'cyan': 0x00CED1, 'teal': 0x008080, 'olive': 0x808000, 'gold': 0xFFD700,
+    'silver': 0xC0C0C0, 'lavender': 0x9F7AEA, 'peach': 0xFFDAB9, 'coral': 0xFC8181,
+    'mint': 0x38B2AC, 'indigo': 0x4C51BF, 'violet': 0x6B46C1, 'lime': 0x84CC16,
+    'rose': 0xF43F5E,
+  };
+
+  let str = typeof colorInput === 'string' ? colorInput : '';
+  if (str.includes(',')) {
+    str = str.split(',')[0].trim();
+  } else {
+    str = str.trim();
+  }
+
+  if (!str) return 0xdddddd;
+  if (str.startsWith('#')) {
+    return parseInt(str.replace('#', ''), 16);
+  }
+
+  const lower = str.toLowerCase();
+  if (colorMap[lower] !== undefined) {
+    return colorMap[lower];
+  }
+  return 0xdddddd;
+};
+
 const Model3DViewer = forwardRef(({ 
   modelUrl, 
   hairModelUrl, 
@@ -247,7 +282,11 @@ const Model3DViewer = forwardRef(({
         -rotatedCenter.z * scale
       );
       
-      // Apply enhanced material with better appearance
+      // Apply enhanced material with product color (or neutral grey for avatar mannequin)
+      const initialColorHex = isAvatar 
+        ? 0xdddddd 
+        : parseColorToHex(productColorRef.current || productColor);
+
       object.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           // Properly dispose of old material if it exists
@@ -259,19 +298,19 @@ const Model3DViewer = forwardRef(({
             }
           }
           
-          // Create new material with all required properties properly set
+          // Create new material with product color
           child.material = new THREE.MeshStandardMaterial({
-            color: 0xdddddd,
-            roughness: 0.7, // Simplified material
-            metalness: 0, // No metalness for better performance
+            color: initialColorHex,
+            roughness: 0.6,
+            metalness: 0.0,
             flatShading: false,
-            side: THREE.FrontSide,
+            side: THREE.DoubleSide,
             transparent: false,
             opacity: 1.0,
             depthTest: true,
             depthWrite: true,
           });
-          child.castShadow = false; // Disabled shadows
+          child.castShadow = false;
           child.receiveShadow = false;
           
           // Force material update
@@ -793,43 +832,15 @@ const Model3DViewer = forwardRef(({
   useEffect(() => {
     if (!productColor) return;
 
-    // Full colour map
-    const colorMap = {
-      'White': 0xFFFFFF, 'Black': 0x000000, 'Red': 0xDC143C, 'Blue': 0x4169E1,
-      'Navy': 0x000080, 'Green': 0x228B22, 'Yellow': 0xFFD700, 'Pink': 0xFF69B4,
-      'Purple': 0x9370DB, 'Orange': 0xFF8C00, 'Gray': 0x808080, 'Grey': 0x808080,
-      'Brown': 0x8B4513, 'Beige': 0xF5F5DC, 'Cream': 0xFFFDD0, 'Maroon': 0x800000,
-      'Cyan': 0x00CED1, 'Teal': 0x008080, 'Olive': 0x808000, 'Gold': 0xFFD700,
-      'Silver': 0xC0C0C0, 'Lavender': 0xE6E6FA, 'Peach': 0xFFDAB9,
-    };
-
-    let colorHex;
-    if (typeof productColor === 'string') {
-      // Case-insensitive lookup
-      const key = Object.keys(colorMap).find(k => k.toLowerCase() === productColor.toLowerCase().trim());
-      colorHex = key ? colorMap[key] : (productColor.startsWith('#') ? parseInt(productColor.replace('#',''), 16) : 0xCCCCCC);
-    } else {
-      colorHex = productColor || 0xCCCCCC;
-    }
-
+    const colorHex = parseColorToHex(productColor);
     console.log('Applying color:', productColor, '-> hex:', colorHex.toString(16));
 
-    const applyColor = () => {
-      if (clothingRef.current) {
-        // Clothing is loaded — update it directly
-        changeClothingColor(colorHex);
-      } else if (modelRef.current && !loading && !applyAvatarCustomization && !isAvatarModel) {
-        // No clothing yet (still in 2-second setTimeout). Retry after clothing delay.
-        // We schedule a retry at 2.5 s to be safe (only for standalone non-avatar models).
-        const retryId = setTimeout(() => {
-          changeColor(colorHex);
-        }, 2500);
-        return () => clearTimeout(retryId);
-      }
-    };
-
-    applyColor();
-  }, [productColor]);
+    if (clothingRef.current) {
+      changeClothingColor(colorHex);
+    } else if (modelRef.current && !applyAvatarCustomization && !isAvatarModel) {
+      changeColor(colorHex);
+    }
+  }, [productColor, isAvatarModel, applyAvatarCustomization, loading]);
 
   // Apply avatar customizations (skin tone, hair color, eye color) after model loads
   useEffect(() => {
