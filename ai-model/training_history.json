@@ -102,5 +102,21 @@
     "training_accuracy": 95.73,
     "testing_accuracy": 91.8,
     "duration": 0.81
+  },
+  {
+    "session": 14,
+    "timestamp": "2026-08-20 17:54:22",
+    "training_samples": 4246,
+    "training_accuracy": 95.57,
+    "testing_accuracy": 92.09,
+    "duration": 0.94
+  },
+  {
+    "session": 15,
+    "timestamp": "2026-08-20 17:55:05",
+    "training_samples": 4247,
+    "training_accuracy": 95.6,
+    "testing_accuracy": 92.18,
+    "duration": 0.77
   }
 ]
